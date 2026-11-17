@@ -1,0 +1,25 @@
+# Maven - arquivos de compilação
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Java - arquivos compilados
+*.class
+
+# Logs
+*.log
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# Arquivos de ambiente e configurações locais
+.env
+.env.*
+
+out/
