@@ -102,25 +102,28 @@ Já resolvido:
 - Pacote base `br.com.infratrace` em minúsculas; interface `Crud` removida; `InfratraceDAO`
   removido; `Configuracao` e `LogAuditoria` renomeadas.
 - Pasta `supabase/` removida.
+- Spring Boot 4.1.2 (`spring-boot-starter-parent` + só `spring-boot-starter-web`). Classe
+  principal: `br.com.infratrace.InfratraceApplication` (definida como `start-class` no pom,
+  porque o `Main` antigo também tem `main`). Sobe na porta 8080.
+- `application.properties` **não** tem as credenciais nem `spring.datasource.*`: a `Conexao`
+  continua estática e lendo `System.getenv`, porque o acesso é JDBC manual. Se um dia a
+  `Conexao` virar um `@Component`, as chaves podem ir para o `application.properties` com
+  `${INFRATRACE_DB_*}`.
+- JDK 21 instalado pelo IntelliJ em `~/.jdks/openjdk-21.0.2`. Maven não está no PATH; o do
+  IntelliJ fica em `plugins/maven-plugin/lib/maven3/bin/mvn.cmd`.
 
 Ainda pendente:
 1. O Model `Movimentacao` não bate com a tabela: faltam `fk_rac_destino_id` e a separação entre
    slots de origem (`mov_slot_*_origem`) e de destino (`mov_slot_*_destino`). Corrigir quando
    for implementar a movimentação.
-2. Confirmar que existe um **JDK 21** em *File → Project Structure → SDK*. Em 2026-11-16 só
-   havia Java 8 na máquina; se ainda faltar, orientar o download do Eclipse Temurin 21.
-3. Os pacotes `dao/`, `service/`, `controller/` e `dto/` serão criados com a primeira classe de
+2. Os pacotes `dao/`, `service/`, `controller/` e `dto/` serão criados com a primeira classe de
    cada um (o Git não versiona pastas vazias).
 
 ## Próximos passos (nesta ordem, um de cada vez)
 
-1. **Spring Boot:** adicionar ao `pom.xml` (parent `spring-boot-starter-parent` e
-   `spring-boot-starter-web`, sem nenhum starter de JPA/JDBC), criar a classe principal com
-   `@SpringBootApplication` em `br.com.infratrace` e o `application.properties` com
-   `${INFRATRACE_DB_*}`. Explicar o que o Spring Boot faz e o que ele **não** vai fazer
-   (acesso ao banco continua manual).
-2. **Primeira entidade de ponta a ponta** (sugestão: `TipoAtivo`, já tem dados):
-   Model → DAO → Service → Controller → endpoint REST testado no Postman.
+1. **Primeira entidade de ponta a ponta** (sugestão: `TipoAtivo`, já tem dados):
+   Model → DAO → Service → Controller → `GET /tipos-ativo` testado no Postman. Depois disso o
+   `Main` do primeiro marco pode ser removido (e o `start-class` do pom também).
 
 Etapas seguintes do plano do grupo: CRUD → regras de negócio (ocupação dos racks) →
 transações manuais (movimentação) → auditoria e usuários (perfis ADMIN, TECNICO, AUDITOR) →

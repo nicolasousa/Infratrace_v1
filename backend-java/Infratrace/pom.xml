@@ -4,18 +4,37 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.example</groupId>
+    <!-- O "parent" do Spring Boot define versões compatíveis entre si para todas as
+         dependências do ecossistema Spring. Por isso as dependências abaixo não têm <version>. -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.2</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>br.com.infratrace</groupId>
     <artifactId>Infratrace</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Existem dois métodos main no projeto (o Main do primeiro marco e a aplicação Spring).
+             Esta propriedade diz ao Maven qual deles inicia o sistema. -->
+        <start-class>br.com.infratrace.InfratraceApplication</start-class>
     </properties>
 
     <dependencies>
-        <!-- Driver JDBC do MySQL: traduz as chamadas JDBC do Java para o protocolo do MySQL -->
+        <!-- Spring Web: servidor HTTP embutido (Tomcat), @RestController, conversão para JSON.
+             Não adicionamos starters de JPA ou JDBC: o acesso ao banco é manual, com JDBC puro. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Driver JDBC do MySQL: traduz as chamadas JDBC do Java para o protocolo do MySQL.
+             A versão é definida aqui para manter a mesma que já testamos. -->
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
@@ -23,4 +42,13 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <!-- Permite rodar com "mvn spring-boot:run" e gerar um .jar executável -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>
