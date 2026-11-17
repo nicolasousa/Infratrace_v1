@@ -46,8 +46,8 @@ Evite abstrações desnecessárias. É um projeto acadêmico de pequeno porte.
 
 - Script oficial: **`database/infratrace_mysql.sql`**. Ele apaga e recria o banco `infratrace`.
   Nunca rode esse script num banco com dados que precisam ser mantidos.
-- `supabase/infratraceDDL.sql` é a versão original em PostgreSQL. Ficou só como referência e
-  **não é usada**.
+- A versão original em PostgreSQL (`supabase/infratraceDDL.sql`) foi removida em 2026-11-17 por
+  decisão do grupo. Se precisar consultá-la, ela está no histórico do Git.
 - **Não altere tabelas, colunas ou relacionamentos** sem explicar o motivo e receber aprovação.
   Use sempre os nomes reais do script. Nunca invente nomes de tabelas ou colunas.
 - Convenções: snake_case, prefixo de 3 letras por tabela (`atv_`, `rac_`, `usr_`...), FKs como
@@ -84,51 +84,42 @@ No IntelliJ, essas variáveis ficam em *Run → Edit Configurations → Environm
 - **Não faça push, merge nem nada destrutivo sem autorização.**
 - A branch `supabase` é antiga. O trabalho segue na `main`.
 
-## Estado atual (análise feita em 2026-11-16)
+## Estado atual (atualizado em 2026-11-17)
 
-Estrutura: `backend-java/Infratrace/` (Maven), `supabase/` (DDL PostgreSQL antigo) e
-`database/` (DDL MySQL oficial).
+Estrutura: `backend-java/Infratrace/` (Maven) e `database/` (DDL MySQL oficial).
+Código em `src/main/java/br/com/infratrace/`:
+- `Main`: teste do primeiro marco (SELECT em `tipo_ativo`), ainda sem Spring;
+- `config/Conexao`: lê `INFRATRACE_DB_*` e lança `SQLException`;
+- `model/`: as 14 entidades, só com atributos, getters e setters (sem subpacotes).
 
-Problemas encontrados que ainda **não** foram corrigidos:
-1. `pom.xml` só define Java 21: não tem nenhuma dependência (nem Spring Boot, nem driver MySQL).
-2. O driver MySQL foi adicionado à mão no IntelliJ, como `.jar` na pasta Downloads
-   (`.idea/libraries/mysql_connector_j_26_10_0.xml`). Deve passar a vir do Maven:
-   `com.mysql:mysql-connector-j`.
-3. `DAO/Conexao.java`:
-   - tem `root`/`root` fixos no código (já foram para o GitHub);
-   - a URL não inclui o nome do banco;
-   - em caso de erro, retorna `null` em vez de lançar a exceção;
-   - não usa `try-with-resources`.
-4. Não há `.gitignore` na raiz e a pasta `target/` está versionada.
-5. Os pacotes estão em maiúsculas (`DAO`, `Model`) e não há pacote base. O Spring Boot precisa
-   de um pacote raiz. **Aguardando aprovação do grupo:** criar `br.com.infratrace` com os
-   pacotes em minúsculas.
-6. Os Models implementam a interface `Crud` (`buscar`, `adicionar`...), o que mistura
-   persistência com entidade. **Aguardando aprovação do grupo:** remover a interface e deixar
-   essas operações nos DAOs.
-7. `InfratraceDAO` tem código comentado copiado de outro projeto (`Alunos`).
-8. O Model `Movimentacao` não bate com a tabela: faltam `fk_rac_destino_id` e a separação entre
-   slots de origem (`mov_slot_*_origem`) e de destino (`mov_slot_*_destino`).
-9. As classes `logAuditoria` e `configuracao` começam com letra minúscula.
-10. Ambiente (Windows): o MySQL Server 8.0 e o Workbench 8.0 estão instalados. Em
-    `C:\Program Files\Java` só foi encontrado o Java 8. Confirme que existe um **JDK 21** em
-    *File → Project Structure → SDK* e, se não existir, oriente o download (Eclipse Temurin 21).
+Já resolvido:
+- Driver `mysql-connector-j` 26.10.0 vem do Maven; o `.jar` manual do `.idea` foi removido.
+- `Conexao` sem credenciais no código. A senha antiga `root`/`root` ainda aparece no histórico
+  do GitHub, mas não é a senha real.
+- Banco `infratrace` criado no MySQL 8.0.46 local; o primeiro marco funciona.
+- `.gitignore` criado; `target/`, `out/` e `.idea/` estão fora do Git. Cada integrante configura
+  o SDK e a Run Configuration (com as variáveis de ambiente) no próprio IntelliJ.
+- Pacote base `br.com.infratrace` em minúsculas; interface `Crud` removida; `InfratraceDAO`
+  removido; `Configuracao` e `LogAuditoria` renomeadas.
+- Pasta `supabase/` removida.
+
+Ainda pendente:
+1. O Model `Movimentacao` não bate com a tabela: faltam `fk_rac_destino_id` e a separação entre
+   slots de origem (`mov_slot_*_origem`) e de destino (`mov_slot_*_destino`). Corrigir quando
+   for implementar a movimentação.
+2. Confirmar que existe um **JDK 21** em *File → Project Structure → SDK*. Em 2026-11-16 só
+   havia Java 8 na máquina; se ainda faltar, orientar o download do Eclipse Temurin 21.
+3. Os pacotes `dao/`, `service/`, `controller/` e `dto/` serão criados com a primeira classe de
+   cada um (o Git não versiona pastas vazias).
 
 ## Próximos passos (nesta ordem, um de cada vez)
 
-1. **Criar o banco:** confirmar que o grupo rodou `database/infratrace_mysql.sql` no Workbench e
-   que `SELECT tpa_id, tpa_nome FROM infratrace.tipo_ativo ORDER BY tpa_id;` devolve 7 linhas.
-2. **Conferir o ambiente:** `java -version`, JDK 21 no IntelliJ e `git status`.
-3. **Driver no pom.xml:** adicionar `mysql-connector-j` (versão atual estável do Maven Central)
-   e remover a biblioteca manual do `.idea`. Explicar o que é um driver JDBC.
-4. **Corrigir a `Conexao`:** ler as variáveis de ambiente e lançar `SQLException` em vez de
-   devolver `null`.
-5. **Primeiro marco:** no `Main`, ainda sem Spring, executar
-   `SELECT tpa_id, tpa_nome FROM tipo_ativo ORDER BY tpa_id` com `PreparedStatement` e
-   `ResultSet`, usando `try-with-resources`, e imprimir as linhas. Explicar o caminho
-   Java → driver → MySQL → `ResultSet` → objeto Java.
-6. Só depois: `.gitignore`, as reorganizações aprovadas (itens 5 e 6), o Spring Boot
-   (`application.properties` com `${INFRATRACE_DB_*}`) e a primeira entidade com
+1. **Spring Boot:** adicionar ao `pom.xml` (parent `spring-boot-starter-parent` e
+   `spring-boot-starter-web`, sem nenhum starter de JPA/JDBC), criar a classe principal com
+   `@SpringBootApplication` em `br.com.infratrace` e o `application.properties` com
+   `${INFRATRACE_DB_*}`. Explicar o que o Spring Boot faz e o que ele **não** vai fazer
+   (acesso ao banco continua manual).
+2. **Primeira entidade de ponta a ponta** (sugestão: `TipoAtivo`, já tem dados):
    Model → DAO → Service → Controller → endpoint REST testado no Postman.
 
 Etapas seguintes do plano do grupo: CRUD → regras de negócio (ocupação dos racks) →
