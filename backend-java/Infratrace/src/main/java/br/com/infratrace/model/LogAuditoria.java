@@ -1,8 +1,8 @@
-package Model.Log;
+package br.com.infratrace.model;
 
 import java.time.LocalDateTime;
 
-public class logAuditoria {
+public class LogAuditoria {
 
     private Integer id;
     private String acao;

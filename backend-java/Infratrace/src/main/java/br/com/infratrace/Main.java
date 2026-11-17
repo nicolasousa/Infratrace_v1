@@ -1,4 +1,6 @@
-package DAO;
+package br.com.infratrace;
+
+import br.com.infratrace.config.Conexao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

@@ -1,6 +1,6 @@
-package Model.Log;
+package br.com.infratrace.model;
 
-public class configuracao {
+public class Configuracao {
 
     private String chave;
     private String valor;

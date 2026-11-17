@@ -1,12 +1,10 @@
-package Model.Datacenter;
-
-import Model.Crud;
+package br.com.infratrace.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-public class Ativo implements Crud {
+public class Ativo {
 
     private Integer id;
     private String nome;
@@ -169,25 +167,5 @@ public class Ativo implements Crud {
 
     public void setNotaFiscalId(Integer notaFiscalId) {
         this.notaFiscalId = notaFiscalId;
-    }
-
-    @Override
-    public void buscar() {
-
-    }
-
-    @Override
-    public void adicionar() {
-
-    }
-
-    @Override
-    public void excluir() {
-
-    }
-
-    @Override
-    public void alterar() {
-
     }
 }

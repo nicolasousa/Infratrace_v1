@@ -1,10 +1,10 @@
-package Model.Datacenter;
+package br.com.infratrace.model;
 
-public class TipoAtivo {
+public class Fileira {
 
     private Integer id;
     private String nome;
-    private String descricao;
+    private Integer salaId;
 
     public Integer getId() {
         return id;
@@ -22,11 +22,11 @@ public class TipoAtivo {
         this.nome = nome;
     }
 
-    public String getDescricao() {
-        return descricao;
+    public Integer getSalaId() {
+        return salaId;
     }
 
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
+    public void setSalaId(Integer salaId) {
+        this.salaId = salaId;
     }
 }

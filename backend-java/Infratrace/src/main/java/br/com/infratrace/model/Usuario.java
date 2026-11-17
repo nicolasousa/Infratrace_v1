@@ -1,10 +1,8 @@
-package Model.Person;
-
-import Model.Crud;
+package br.com.infratrace.model;
 
 import java.time.LocalDateTime;
 
-public class Usuario implements Crud{
+public class Usuario {
 
     private Integer id;
     private String nome;
@@ -86,25 +84,5 @@ public class Usuario implements Crud{
 
     public void setCriadoEm(LocalDateTime criadoEm) {
         this.criadoEm = criadoEm;
-    }
-
-    @Override
-    public void buscar() {
-
-    }
-
-    @Override
-    public void adicionar() {
-
-    }
-
-    @Override
-    public void excluir() {
-
-    }
-
-    @Override
-    public void alterar() {
-
     }
 }

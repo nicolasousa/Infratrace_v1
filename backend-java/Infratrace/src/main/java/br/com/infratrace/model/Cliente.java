@@ -1,8 +1,6 @@
-package Model.Person;
+package br.com.infratrace.model;
 
-import Model.Crud;
-
-public class Cliente implements Crud {
+public class Cliente {
 
     private Integer id;
     private String nome;
@@ -57,25 +55,5 @@ public class Cliente implements Crud {
 
     public void setTipoClienteId(Integer tipoClienteId) {
         this.tipoClienteId = tipoClienteId;
-    }
-
-    @Override
-    public void buscar() {
-
-    }
-
-    @Override
-    public void adicionar() {
-
-    }
-
-    @Override
-    public void excluir() {
-
-    }
-
-    @Override
-    public void alterar() {
-
     }
 }

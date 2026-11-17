@@ -1,4 +1,4 @@
-package Model.Person;
+package br.com.infratrace.model;
 
 public class TipoCliente {
 

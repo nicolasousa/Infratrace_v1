@@ -1,8 +1,6 @@
-package Model.Datacenter;
+package br.com.infratrace.model;
 
-import Model.Crud;
-
-public class Sala implements Crud {
+public class Sala {
 
     private Integer id;
     private String nome;
@@ -30,25 +28,5 @@ public class Sala implements Crud {
 
     public void setDescricao(String descricao) {
         this.descricao = descricao;
-    }
-
-    @Override
-    public void buscar() {
-
-    }
-
-    @Override
-    public void adicionar() {
-
-    }
-
-    @Override
-    public void excluir() {
-
-    }
-
-    @Override
-    public void alterar() {
-
     }
 }

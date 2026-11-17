@@ -1,4 +1,4 @@
-package Model.Operation;
+package br.com.infratrace.model;
 
 import java.time.LocalDate;
 

@@ -1,11 +1,9 @@
-package Model.Operation;
-
-import Model.Crud;
+package br.com.infratrace.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public class Aluguel implements Crud {
+public class Aluguel {
 
     private Integer id;
     private LocalDate dataInicio;
@@ -60,25 +58,5 @@ public class Aluguel implements Crud {
 
     public void setRackId(Integer rackId) {
         this.rackId = rackId;
-    }
-
-    @Override
-    public void buscar() {
-
-    }
-
-    @Override
-    public void adicionar() {
-
-    }
-
-    @Override
-    public void excluir() {
-
-    }
-
-    @Override
-    public void alterar() {
-
     }
 }

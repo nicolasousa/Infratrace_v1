@@ -1,8 +1,6 @@
-package Model.Datacenter;
+package br.com.infratrace.model;
 
-import Model.Crud;
-
-public class Rack implements Crud {
+public class Rack {
 
     private Integer id;
     private String nome;
@@ -39,25 +37,5 @@ public class Rack implements Crud {
 
     public void setFileiraId(Integer fileiraId) {
         this.fileiraId = fileiraId;
-    }
-
-    @Override
-    public void buscar() {
-
-    }
-
-    @Override
-    public void adicionar() {
-
-    }
-
-    @Override
-    public void excluir() {
-
-    }
-
-    @Override
-    public void alterar() {
-
     }
 }
