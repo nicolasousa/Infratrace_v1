@@ -2,16 +2,23 @@ package br.com.infratrace.model;
 
 import java.time.LocalDateTime;
 
+/**
+ * Tabela movimentacao: histórico de mudanças físicas de um ativo.
+ * Origem nula = o ativo veio do estoque. Destino nulo = o ativo foi para o estoque.
+ */
 public class Movimentacao {
 
     private Integer id;
     private LocalDateTime data;
     private String motivo;
-    private Integer slotInicio;
-    private Integer slotFim;
-    private Integer ativoId;       // FK para Ativo
-    private Integer usuarioId;     // FK para Usuario
-    private Integer rackOrigemId;  // FK para Rack (Origem)
+    private Integer rackOrigemId;
+    private Integer slotInicioOrigem;
+    private Integer slotFimOrigem;
+    private Integer rackDestinoId;
+    private Integer slotInicioDestino;
+    private Integer slotFimDestino;
+    private Integer ativoId;
+    private Integer usuarioId;
 
     public Integer getId() {
         return id;
@@ -29,14 +36,6 @@ public class Movimentacao {
         this.data = data;
     }
 
-    public Integer getSlotInicio() {
-        return slotInicio;
-    }
-
-    public void setSlotInicio(Integer slotInicio) {
-        this.slotInicio = slotInicio;
-    }
-
     public String getMotivo() {
         return motivo;
     }
@@ -45,12 +44,52 @@ public class Movimentacao {
         this.motivo = motivo;
     }
 
-    public Integer getSlotFim() {
-        return slotFim;
+    public Integer getRackOrigemId() {
+        return rackOrigemId;
     }
 
-    public void setSlotFim(Integer slotFim) {
-        this.slotFim = slotFim;
+    public void setRackOrigemId(Integer rackOrigemId) {
+        this.rackOrigemId = rackOrigemId;
+    }
+
+    public Integer getSlotInicioOrigem() {
+        return slotInicioOrigem;
+    }
+
+    public void setSlotInicioOrigem(Integer slotInicioOrigem) {
+        this.slotInicioOrigem = slotInicioOrigem;
+    }
+
+    public Integer getSlotFimOrigem() {
+        return slotFimOrigem;
+    }
+
+    public void setSlotFimOrigem(Integer slotFimOrigem) {
+        this.slotFimOrigem = slotFimOrigem;
+    }
+
+    public Integer getRackDestinoId() {
+        return rackDestinoId;
+    }
+
+    public void setRackDestinoId(Integer rackDestinoId) {
+        this.rackDestinoId = rackDestinoId;
+    }
+
+    public Integer getSlotInicioDestino() {
+        return slotInicioDestino;
+    }
+
+    public void setSlotInicioDestino(Integer slotInicioDestino) {
+        this.slotInicioDestino = slotInicioDestino;
+    }
+
+    public Integer getSlotFimDestino() {
+        return slotFimDestino;
+    }
+
+    public void setSlotFimDestino(Integer slotFimDestino) {
+        this.slotFimDestino = slotFimDestino;
     }
 
     public Integer getAtivoId() {
@@ -67,13 +106,5 @@ public class Movimentacao {
 
     public void setUsuarioId(Integer usuarioId) {
         this.usuarioId = usuarioId;
-    }
-
-    public Integer getRackOrigemId() {
-        return rackOrigemId;
-    }
-
-    public void setRackOrigemId(Integer rackOrigemId) {
-        this.rackOrigemId = rackOrigemId;
     }
 }

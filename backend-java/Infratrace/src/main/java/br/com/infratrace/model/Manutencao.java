@@ -2,6 +2,7 @@ package br.com.infratrace.model;
 
 import java.time.LocalDate;
 
+/** Tabela manutencao. dataFim nula = manutenção em andamento. */
 public class Manutencao {
 
     private Integer id;
@@ -10,8 +11,8 @@ public class Manutencao {
     private String responsavel;
     private LocalDate dataInicio;
     private LocalDate dataFim;
-    private Integer ativo;
-    private Integer usuario;
+    private Integer ativoId;
+    private Integer usuarioId;
 
     public Integer getId() {
         return id;
@@ -61,19 +62,19 @@ public class Manutencao {
         this.dataFim = dataFim;
     }
 
-    public Integer getAtivo() {
-        return ativo;
+    public Integer getAtivoId() {
+        return ativoId;
     }
 
-    public void setAtivo(Integer ativo) {
-        this.ativo = ativo;
+    public void setAtivoId(Integer ativoId) {
+        this.ativoId = ativoId;
     }
 
-    public Integer getUsuario() {
-        return usuario;
+    public Integer getUsuarioId() {
+        return usuarioId;
     }
 
-    public void setUsuario(Integer usuario) {
-        this.usuario = usuario;
+    public void setUsuarioId(Integer usuarioId) {
+        this.usuarioId = usuarioId;
     }
 }

@@ -2,6 +2,7 @@ package br.com.infratrace.model;
 
 import java.time.LocalDateTime;
 
+/** Tabela log_auditoria. Os valores anterior e novo são guardados como JSON (texto). */
 public class LogAuditoria {
 
     private Integer id;
@@ -11,7 +12,7 @@ public class LogAuditoria {
     private LocalDateTime dataHora;
     private String valorAnterior;
     private String valorNovo;
-    private Integer usuario;
+    private Integer usuarioId;
 
     public Integer getId() {
         return id;
@@ -69,11 +70,11 @@ public class LogAuditoria {
         this.valorNovo = valorNovo;
     }
 
-    public Integer getUsuario() {
-        return usuario;
+    public Integer getUsuarioId() {
+        return usuarioId;
     }
 
-    public void setUsuario(Integer usuario) {
-        this.usuario = usuario;
+    public void setUsuarioId(Integer usuarioId) {
+        this.usuarioId = usuarioId;
     }
 }
