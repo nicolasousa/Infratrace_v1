@@ -124,5 +124,5 @@ Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
 3. Não há testes JUnit; só o teste de ponta a ponta em PowerShell e a coleção do Postman.
 4. Listagens sem paginação.
 5. Conferir com o enunciado do professor se há requisitos (RF) não cobertos.
-6. Em 2026-11-18 o GitHub estava no commit do Spring Boot (`883eafc`); a API, a documentação e
-   os anexos ainda estavam só no computador local (sem `git push`).
+6. Antes de dizer o que está ou não no GitHub, confira com `git fetch` + `git status -sb`
+   (em 2026-11-18 tudo foi enviado até o commit `91a81ed`).
