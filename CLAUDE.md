@@ -84,47 +84,38 @@ No IntelliJ, essas variáveis ficam em *Run → Edit Configurations → Environm
 - **Não faça push, merge nem nada destrutivo sem autorização.**
 - A branch `supabase` é antiga. O trabalho segue na `main`.
 
-## Estado atual (atualizado em 2026-11-17)
+## Estado atual (atualizado em 2026-11-18)
 
-Estrutura: `backend-java/Infratrace/` (Maven) e `database/` (DDL MySQL oficial).
-Código em `src/main/java/br/com/infratrace/`:
-- `Main`: teste do primeiro marco (SELECT em `tipo_ativo`), ainda sem Spring;
-- `config/Conexao`: lê `INFRATRACE_DB_*` e lança `SQLException`;
-- `model/`: as 14 entidades, só com atributos, getters e setters (sem subpacotes).
+Em 2026-11-18, por causa do prazo, o grupo pediu para concluir a maior parte do backend de uma
+vez (em vez de etapas pequenas). Agora a prioridade é o grupo **entender** o que foi feito:
+ao explicar, use os comentários das classes e o `docs/API.md`.
 
-Já resolvido:
-- Driver `mysql-connector-j` 26.10.0 vem do Maven; o `.jar` manual do `.idea` foi removido.
-- `Conexao` sem credenciais no código. A senha antiga `root`/`root` ainda aparece no histórico
-  do GitHub, mas não é a senha real.
-- Banco `infratrace` criado no MySQL 8.0.46 local; o primeiro marco funciona.
-- `.gitignore` criado; `target/`, `out/` e `.idea/` estão fora do Git. Cada integrante configura
-  o SDK e a Run Configuration (com as variáveis de ambiente) no próprio IntelliJ.
-- Pacote base `br.com.infratrace` em minúsculas; interface `Crud` removida; `InfratraceDAO`
-  removido; `Configuracao` e `LogAuditoria` renomeadas.
-- Pasta `supabase/` removida.
-- Spring Boot 4.1.2 (`spring-boot-starter-parent` + só `spring-boot-starter-web`). Classe
-  principal: `br.com.infratrace.InfratraceApplication` (definida como `start-class` no pom,
-  porque o `Main` antigo também tem `main`). Sobe na porta 8080.
-- `application.properties` **não** tem as credenciais nem `spring.datasource.*`: a `Conexao`
-  continua estática e lendo `System.getenv`, porque o acesso é JDBC manual. Se um dia a
-  `Conexao` virar um `@Component`, as chaves podem ir para o `application.properties` com
-  `${INFRATRACE_DB_*}`.
-- JDK 21 instalado pelo IntelliJ em `~/.jdks/openjdk-21.0.2`. Maven não está no PATH; o do
-  IntelliJ fica em `plugins/maven-plugin/lib/maven3/bin/mvn.cmd`.
+Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
+- `controller/` → `service/` → `dao/`, um conjunto por entidade, + `model/`, `dto/`, `exception/`
+  (`TratadorDeErros` converte exceções e códigos MySQL 1644/1062/1451/1452/3819 em HTTP),
+  `seguranca/` (PBKDF2 do próprio Java, sessões em memória, `AutenticacaoInterceptor` com os
+  perfis) e `config/` (`Conexao`, `Transacao`, `WebConfig`).
+- Padrão de transação: os DAOs recebem a `Connection`; o Service abre, faz
+  `setAutoCommit(false)`, `commit()`/`rollback()`. `config/Transacao` centraliza isso;
+  `MovimentacaoService` está escrito por extenso de propósito (exemplo didático).
+- Auditoria: toda escrita grava `log_auditoria` na mesma transação (JSON com antes/depois).
+- Racks: `RackService.validarPosicao` trava o rack com `SELECT ... FOR UPDATE` e valida
+  capacidade e sobreposição antes dos triggers.
+- Primeiro ADMIN: `POST /auth/primeiro-admin` (só com a tabela `usuario` vazia); nenhuma senha
+  fica no script SQL.
+- Spring Boot 4.1.2 só com `spring-boot-starter-web`; Jackson 3 (`tools.jackson.*`).
+- `application.properties` não tem `spring.datasource.*`: a `Conexao` lê `System.getenv`.
+- JDK 21 em `~/.jdks/openjdk-21.0.2`; Maven do IntelliJ em
+  `plugins/maven-plugin/lib/maven3/bin/mvn.cmd` (não está no PATH).
+- Documentação: `docs/API.md`, `docs/InfraTrace.postman_collection.json` (63 requisições) e
+  `docs/teste_api.ps1` (81 verificações de ponta a ponta; todas passaram em 2026-11-18).
 
-Ainda pendente:
-1. O Model `Movimentacao` não bate com a tabela: faltam `fk_rac_destino_id` e a separação entre
-   slots de origem (`mov_slot_*_origem`) e de destino (`mov_slot_*_destino`). Corrigir quando
-   for implementar a movimentação.
-2. Os pacotes `dao/`, `service/`, `controller/` e `dto/` serão criados com a primeira classe de
-   cada um (o Git não versiona pastas vazias).
+## Pendente
 
-## Próximos passos (nesta ordem, um de cada vez)
-
-1. **Primeira entidade de ponta a ponta** (sugestão: `TipoAtivo`, já tem dados):
-   Model → DAO → Service → Controller → `GET /tipos-ativo` testado no Postman. Depois disso o
-   `Main` do primeiro marco pode ser removido (e o `start-class` do pom também).
-
-Etapas seguintes do plano do grupo: CRUD → regras de negócio (ocupação dos racks) →
-transações manuais (movimentação) → auditoria e usuários (perfis ADMIN, TECNICO, AUDITOR) →
-testes no Postman e documentação da API.
+1. **Anexos** (tabela `anexo`, RF-01.5): não há Model/DAO/endpoint. Exige upload de arquivo
+   (`multipart/form-data`) e decidir onde guardar os arquivos.
+2. **Recuperação de senha** (`usr_token_recuperacao`, `usr_token_expiracao`): não implementada.
+3. Sessões ficam em memória e somem ao reiniciar (simplificação consciente; alternativa: JWT).
+4. Não há testes JUnit; só o teste de ponta a ponta em PowerShell e a coleção do Postman.
+5. Listagens sem paginação.
+6. Conferir com o enunciado do professor se há requisitos (RF) não cobertos.
