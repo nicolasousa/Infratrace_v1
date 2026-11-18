@@ -23,3 +23,6 @@ Desktop.ini
 .env.*
 
 out/
+
+# Arquivos enviados como anexo (ficam só no servidor, nunca no Git)
+anexos/

@@ -18,6 +18,8 @@ Documentação completa da API: [`docs/API.md`](docs/API.md).
    INFRATRACE_DB_URL=jdbc:mysql://localhost:3306/infratrace;INFRATRACE_DB_USER=root;INFRATRACE_DB_PASSWORD=<sua senha>
    ```
    A senha **nunca** vai para o código nem para o GitHub.
+   Opcional: `INFRATRACE_ANEXOS_DIR=<pasta>` define onde os anexos são gravados. O padrão é
+   `anexos/`, dentro da pasta onde a aplicação roda.
 4. Rode `InfratraceApplication`. O console deve mostrar `Tomcat started on port 8080`.
 5. No **Postman**, importe `docs/InfraTrace.postman_collection.json` e rode, nesta ordem,
    *Primeiro admin* e *Login*. O token é salvo sozinho.
@@ -37,7 +39,7 @@ backend-java/Infratrace/src/main/java/br/com/infratrace/
 ├── dto/          dados que entram e saem da API
 ├── exception/    exceções do sistema e conversão em respostas HTTP
 ├── seguranca/    hash de senha, sessões e controle de acesso por perfil
-└── config/       conexão com o banco, transação manual e registro do interceptor
+└── config/       conexão com o banco, transação manual, pasta de anexos e registro do interceptor
 database/infratrace_mysql.sql   script oficial do banco (tabelas, triggers, dados iniciais)
 docs/                            documentação da API, coleção do Postman e teste automático
 ```

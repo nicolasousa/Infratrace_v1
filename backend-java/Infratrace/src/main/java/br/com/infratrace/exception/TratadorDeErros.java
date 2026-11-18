@@ -7,9 +7,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.ErrorResponse;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.sql.SQLException;
 
@@ -48,6 +52,26 @@ public class TratadorDeErros {
     public ResponseEntity<RespostaErro> jsonInvalido(HttpMessageNotReadableException e) {
         return resposta(HttpStatus.BAD_REQUEST,
                 "Corpo da requisição inválido. Confira o JSON, os tipos dos campos e o formato das datas (AAAA-MM-DD).");
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<RespostaErro> arquivoGrande(MaxUploadSizeExceededException e) {
+        return resposta(HttpStatus.PAYLOAD_TOO_LARGE, "Arquivo grande demais. O limite é de 10 MB por anexo.");
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<RespostaErro> parteFaltando(MissingServletRequestPartException e) {
+        return resposta(HttpStatus.BAD_REQUEST, "Campo '" + e.getRequestPartName() + "' não enviado no form-data");
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<RespostaErro> parametroFaltando(MissingServletRequestParameterException e) {
+        return resposta(HttpStatus.BAD_REQUEST, "Parâmetro '" + e.getParameterName() + "' não enviado");
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<RespostaErro> multipartInvalido(MultipartException e) {
+        return resposta(HttpStatus.BAD_REQUEST, "Envie o arquivo como multipart/form-data (campos 'tipo' e 'arquivo')");
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

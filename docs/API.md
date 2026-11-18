@@ -49,7 +49,7 @@ Na coleção do Postman, a requisição de login já salva o token automaticamen
 | Perfil | Pode |
 |---|---|
 | **ADMIN** | Tudo. |
-| **TECNICO** | Consultar tudo, exceto usuários e auditoria. Criar e alterar **ativos, movimentações, manutenções e notas fiscais**. |
+| **TECNICO** | Consultar tudo, exceto usuários e auditoria. Criar e alterar **ativos, anexos, movimentações, manutenções e notas fiscais**. |
 | **AUDITOR** | Só consultar (GET), incluindo a auditoria. Não acessa usuários. |
 
 Sem token ou com token inválido → **401**. Perfil sem permissão → **403**.
@@ -71,6 +71,7 @@ Todo erro tem o mesmo formato:
 | 403 | Perfil sem permissão. |
 | 404 | Registro ou rota inexistente. |
 | 409 | Conflito com os dados: slot ocupado, aluguel sobreposto, valor duplicado (UNIQUE), exclusão de registro em uso (FK), erro 1644 dos triggers. |
+| 413 | Anexo maior que 10 MB. |
 | 500 | Erro inesperado (aparece no console da aplicação). |
 
 ---
@@ -151,6 +152,36 @@ Corpo do ativo:
 - `status`: `ATIVO` (padrão), `INATIVO`, `EM_MANUTENCAO` ou `AGUARDANDO_DESCARTE`. `DESCARTADO` só pelo endpoint de descarte.
 - `rackId`, `slotInicio` e `slotFim` vêm **juntos** ou não vêm. Sem eles, o ativo fica no estoque.
 
+### Anexos de ativos
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/ativos/{id}/anexos` | Anexos do ativo |
+| POST | `/ativos/{id}/anexos` | Envia um arquivo (**multipart/form-data**) |
+| GET | `/anexos/{id}` | Dados do anexo |
+| GET | `/anexos/{id}/download` | Baixa o arquivo com o nome original |
+| DELETE | `/anexos/{id}` | Remove o registro e o arquivo |
+
+Envio no Postman: *Body → form-data*, com dois campos:
+
+| Campo | Tipo | Valor |
+|---|---|---|
+| `tipo` | Text | `NOTA_FISCAL`, `MANUAL`, `CONTRATO` ou `OUTRO` |
+| `arquivo` | File | pdf, png, jpg, jpeg, txt, csv, doc, docx, xls, xlsx, odt ou ods; até 10 MB |
+
+Resposta:
+
+```json
+{ "id": 1, "tipo": "MANUAL", "nomeOriginal": "manual servidor.pdf", "tamanhoBytes": 48213,
+  "enviadoEm": "2026-11-18T14:02:11", "ativoId": 2, "download": "/anexos/1/download" }
+```
+
+- Os arquivos ficam na pasta da variável `INFRATRACE_ANEXOS_DIR`. Se ela não for definida, a
+  pasta é `anexos/`, dentro do diretório onde a aplicação foi iniciada; essa pasta não vai para
+  o Git. No disco, cada arquivo é salvo com um nome aleatório (UUID); o nome original fica só no banco.
+- Um ativo com anexos não pode ser excluído (FK → 409); use o descarte.
+- Para baixar no Postman, use **Send and Download**, na seta ao lado de *Send*.
+
 ### Movimentações (transação manual)
 
 | Método | Rota | Descrição |
@@ -223,5 +254,6 @@ mesma transação** da alteração.
 5. `GET /racks/1/ocupacao`
 6. Tente conflitos: ativo nos slots 2-3 (409), slot 43 (400), aluguel sobreposto (409)
 7. `POST /manutencoes` → `GET /ativos/1` (EM_MANUTENCAO) → `PATCH /manutencoes/1/finalizar`
-8. `POST /ativos/1/descarte` → `GET /ativos/1/movimentacoes`
-9. `GET /auditoria`
+8. `POST /ativos/1/anexos` (form-data) → `GET /anexos/1/download`
+9. `POST /ativos/1/descarte` → `GET /ativos/1/movimentacoes`
+10. `GET /auditoria`

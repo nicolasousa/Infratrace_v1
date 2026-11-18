@@ -48,6 +48,22 @@ function Esperar($nome, $resp, $statusEsperado, [scriptblock]$cond = $null) {
     if (-not $passou -and -not $msg) { Write-Output "        corpo: $($resp.Texto)" }
 }
 
+# Envio multipart/form-data (o Invoke-WebRequest do PowerShell 5.1 não tem -Form; usamos o curl.exe do Windows)
+function EnviarArquivo($rota, $tipo, $arquivo, $token) {
+    $saida = [IO.Path]::GetTempFileName()
+    $campos = @()
+    if ($tipo) { $campos += @('-F', "tipo=$tipo") }
+    if ($arquivo) { $campos += @('-F', "arquivo=@$arquivo") }
+    $status = & curl.exe -s -o $saida -w '%{http_code}' -H "Authorization: Bearer $token" @campos "$base$rota"
+    $txt = [IO.File]::ReadAllText($saida, [Text.Encoding]::UTF8); Remove-Item $saida
+    $obj = $null; if ($txt) { try { $obj = $txt | ConvertFrom-Json } catch {} }
+    [pscustomobject]@{ Status = [int]$status; Json = $obj; Texto = $txt }
+}
+
+function Baixar($rota, $destino, $token) {
+    [int](& curl.exe -s -o $destino -w '%{http_code}' -H "Authorization: Bearer $token" "$base$rota")
+}
+
 $hoje = Get-Date
 $d = { param($dias) $hoje.AddDays($dias).ToString('yyyy-MM-dd') }
 
@@ -136,6 +152,43 @@ Esperar 'Alerta de aluguéis (R02 vence em 10 dias)' (Chamar GET '/alertas/alugu
 Esperar 'Configuração com valor fora das opções -> 400' (Chamar PUT '/configuracoes/alerta_garantia_dias' @{valor='45'} $adm) 400
 Esperar 'TECNICO alterando configuração -> 403' (Chamar PUT '/configuracoes/alerta_garantia_dias' @{valor='60'} $tec) 403
 Esperar 'ADMIN altera para 60 dias -> 200' (Chamar PUT '/configuracoes/alerta_garantia_dias' @{valor='60'} $adm) 200 { param($j) $j.valor -eq '60' }
+
+Write-Output '--- Anexos'
+$tmp = Join-Path ([IO.Path]::GetTempPath()) 'infratrace_teste_anexos'; New-Item -ItemType Directory -Force $tmp | Out-Null
+$pdf = Join-Path $tmp 'manual servidor.pdf'; [IO.File]::WriteAllText($pdf, "%PDF-1.4 conteudo de teste $(Get-Random)")
+$exe = Join-Path $tmp 'virus.exe'; [IO.File]::WriteAllText($exe, 'MZ')
+$vazio = Join-Path $tmp 'vazio.pdf'; [IO.File]::WriteAllText($vazio, '')
+$grande = Join-Path $tmp 'grande.pdf'; $fs = [IO.File]::Create($grande); $fs.SetLength(11MB); $fs.Close()
+$pastaAnexos = $env:INFRATRACE_ANEXOS_DIR
+$contarArquivos = { if ($pastaAnexos -and (Test-Path $pastaAnexos)) { @(Get-ChildItem $pastaAnexos -File).Count } else { -1 } }
+$antes = & $contarArquivos
+
+$r = EnviarArquivo "/ativos/$a2/anexos" 'manual' $pdf $tec
+Esperar 'Enviar PDF (TECNICO) -> 201' $r 201 { param($j) $j.nomeOriginal -eq 'manual servidor.pdf' -and $j.tipo -eq 'MANUAL' -and $j.tamanhoBytes -gt 0 -and -not $j.PSObject.Properties['caminho'] }
+$anx = $r.Json.id
+Esperar 'Extensão .exe -> 400' (EnviarArquivo "/ativos/$a2/anexos" 'OUTRO' $exe $tec) 400
+Esperar 'Tipo inválido -> 400' (EnviarArquivo "/ativos/$a2/anexos" 'FOTO' $pdf $tec) 400
+Esperar 'Sem o campo arquivo -> 400' (EnviarArquivo "/ativos/$a2/anexos" 'MANUAL' $null $tec) 400
+Esperar 'Arquivo vazio -> 400' (EnviarArquivo "/ativos/$a2/anexos" 'MANUAL' $vazio $tec) 400
+Esperar 'Arquivo de 11 MB -> 413' (EnviarArquivo "/ativos/$a2/anexos" 'MANUAL' $grande $tec) 413
+Esperar 'Ativo inexistente -> 404' (EnviarArquivo '/ativos/9999/anexos' 'MANUAL' $pdf $tec) 404
+Esperar 'AUDITOR enviando anexo -> 403' (EnviarArquivo "/ativos/$a2/anexos" 'MANUAL' $pdf $aud) 403
+if ($antes -ge 0) {
+    $depois = & $contarArquivos
+    Esperar 'Só 1 arquivo novo no disco (erros não deixam órfãos)' ([pscustomobject]@{ Status = 200 }) 200 { param($j) $depois -eq $antes + 1 }
+}
+Esperar 'Listar anexos do ativo (AUDITOR)' (Chamar GET "/ativos/$a2/anexos" $null $aud) 200 { param($j) @($j).Count -eq 1 }
+$baixado = Join-Path $tmp 'baixado.pdf'
+$st = Baixar "/anexos/$anx/download" $baixado $aud
+Esperar 'Download devolve o mesmo conteúdo' ([pscustomobject]@{ Status = $st }) 200 { param($j) (Get-FileHash $baixado).Hash -eq (Get-FileHash $pdf).Hash }
+Esperar 'Excluir anexo (TECNICO) -> 204' (Chamar DELETE "/anexos/$anx" $null $tec) 204
+if ($antes -ge 0) {
+    $final = & $contarArquivos
+    Esperar 'Arquivo apagado do disco' ([pscustomobject]@{ Status = 200 }) 200 { param($j) $final -eq $antes }
+}
+Esperar 'Anexo excluído -> 404' (Chamar GET "/anexos/$anx" $null $tec) 404
+$r = EnviarArquivo "/ativos/$a2/anexos" 'NOTA_FISCAL' $pdf $tec; Esperar 'Novo anexo para o ativo 2 -> 201' $r 201
+Remove-Item -Recurse -Force $tmp
 
 Write-Output '--- Descarte'
 $r = Chamar POST "/ativos/$a1/descarte" @{motivo='Fim de vida útil'} $tec

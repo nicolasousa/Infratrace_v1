@@ -27,8 +27,8 @@ import java.util.Set;
  *
  * Permissões:
  *  - ADMIN: tudo.
- *  - TECNICO: consulta tudo (menos usuários e auditoria) e altera ativos, movimentações,
- *             manutenções e notas fiscais.
+ *  - TECNICO: consulta tudo (menos usuários e auditoria) e altera ativos, anexos,
+ *             movimentações, manutenções e notas fiscais.
  *  - AUDITOR: só consulta (GET), incluindo a auditoria; não acessa usuários.
  */
 @Component
@@ -37,7 +37,7 @@ public class AutenticacaoInterceptor implements HandlerInterceptor {
     public static final String USUARIO_LOGADO = "usuarioLogado";
 
     private static final Set<String> ROTAS_PUBLICAS = Set.of("/auth/login", "/auth/primeiro-admin");
-    private static final Set<String> ESCRITA_TECNICO = Set.of("/ativos", "/movimentacoes", "/manutencoes", "/notas-fiscais");
+    private static final Set<String> ESCRITA_TECNICO = Set.of("/ativos", "/anexos", "/movimentacoes", "/manutencoes", "/notas-fiscais");
 
     private final Sessoes sessoes;
     private final UsuarioDAO usuarioDAO;

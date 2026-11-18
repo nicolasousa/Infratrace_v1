@@ -56,6 +56,10 @@
                          "value":  "1"
                      },
                      {
+                         "key":  "anexoId",
+                         "value":  "1"
+                     },
+                     {
                          "key":  "usuarioId",
                          "value":  "2"
                      }
@@ -1105,7 +1109,129 @@
                               ]
                  },
                  {
-                     "name":  "6. Movimentações",
+                     "name":  "6. Anexos",
+                     "item":  [
+                                  {
+                                      "name":  "Listar anexos do ativo",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/ativos/{{ativoId}}/anexos",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "ativos",
+                                                                               "{{ativoId}}",
+                                                                               "anexos"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Enviar anexo (selecione o arquivo)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/ativos/{{ativoId}}/anexos",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "ativos",
+                                                                               "{{ativoId}}",
+                                                                               "anexos"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "tipo",
+                                                                                        "value":  "MANUAL",
+                                                                                        "type":  "text",
+                                                                                        "description":  "NOTA_FISCAL, MANUAL, CONTRATO ou OUTRO"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "arquivo",
+                                                                                        "type":  "file",
+                                                                                        "src":  [
+
+                                                                                                ],
+                                                                                        "description":  "Clique em Select Files e escolha um PDF/imagem de até 10 MB"
+                                                                                    }
+                                                                                ]
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Dados do anexo",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/anexos/{{anexoId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "anexos",
+                                                                               "{{anexoId}}"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Baixar arquivo (Send and Download)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/anexos/{{anexoId}}/download",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "anexos",
+                                                                               "{{anexoId}}",
+                                                                               "download"
+                                                                           ]
+                                                              }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Excluir anexo",
+                                      "request":  {
+                                                      "method":  "DELETE",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/anexos/{{anexoId}}",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "anexos",
+                                                                               "{{anexoId}}"
+                                                                           ]
+                                                              }
+                                                  }
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "7. Movimentações",
                      "item":  [
                                   {
                                       "name":  "Listar",
@@ -1218,7 +1344,7 @@
                               ]
                  },
                  {
-                     "name":  "7. Manutenções",
+                     "name":  "8. Manutenções",
                      "item":  [
                                   {
                                       "name":  "Listar",
@@ -1334,7 +1460,7 @@
                               ]
                  },
                  {
-                     "name":  "8. Clientes e aluguéis",
+                     "name":  "9. Clientes e aluguéis",
                      "item":  [
                                   {
                                       "name":  "Listar clientes ativos",
@@ -1572,7 +1698,7 @@
                               ]
                  },
                  {
-                     "name":  "9. Configurações, alertas e auditoria",
+                     "name":  "10. Configurações, alertas e auditoria",
                      "item":  [
                                   {
                                       "name":  "Listar configurações",

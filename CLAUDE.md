@@ -107,15 +107,21 @@ Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
 - `application.properties` não tem `spring.datasource.*`: a `Conexao` lê `System.getenv`.
 - JDK 21 em `~/.jdks/openjdk-21.0.2`; Maven do IntelliJ em
   `plugins/maven-plugin/lib/maven3/bin/mvn.cmd` (não está no PATH).
-- Documentação: `docs/API.md`, `docs/InfraTrace.postman_collection.json` (63 requisições) e
-  `docs/teste_api.ps1` (81 verificações de ponta a ponta; todas passaram em 2026-11-18).
+- Anexos: arquivos na pasta `infratrace.anexos.diretorio` (`${INFRATRACE_ANEXOS_DIR:anexos}`,
+  fora do Git), salvos com nome UUID; `anx_caminho` guarda esse nome. Como o disco não entra na
+  transação, a ordem é arquivo → INSERT (e apaga o arquivo se o INSERT falhar) e DELETE → commit
+  → apaga o arquivo. Limite de 10 MB (413).
+- Documentação: `docs/API.md`, `docs/InfraTrace.postman_collection.json` (68 requisições; o
+  gerador não fica no repositório) e `docs/teste_api.ps1` (96 verificações de ponta a ponta;
+  todas passaram em 2026-11-18; envios de anexo usam `curl.exe`).
 
 ## Pendente
 
-1. **Anexos** (tabela `anexo`, RF-01.5): não há Model/DAO/endpoint. Exige upload de arquivo
-   (`multipart/form-data`) e decidir onde guardar os arquivos.
-2. **Recuperação de senha** (`usr_token_recuperacao`, `usr_token_expiracao`): não implementada.
-3. Sessões ficam em memória e somem ao reiniciar (simplificação consciente; alternativa: JWT).
-4. Não há testes JUnit; só o teste de ponta a ponta em PowerShell e a coleção do Postman.
-5. Listagens sem paginação.
-6. Conferir com o enunciado do professor se há requisitos (RF) não cobertos.
+1. **Recuperação de senha** (`usr_token_recuperacao`, `usr_token_expiracao`): não implementada.
+   Exige enviar o token por e-mail (SMTP) ou, sem e-mail, um ADMIN redefinir a senha (isso já é
+   possível em `PUT /usuarios/{id}`).
+2. Sessões ficam em memória e somem ao reiniciar (simplificação consciente; alternativa: JWT).
+3. Não há testes JUnit; só o teste de ponta a ponta em PowerShell e a coleção do Postman.
+4. Listagens sem paginação.
+5. Conferir com o enunciado do professor se há requisitos (RF) não cobertos.
+6. Nada foi enviado ao GitHub (sem `git push`) desde 2026-11-16.
