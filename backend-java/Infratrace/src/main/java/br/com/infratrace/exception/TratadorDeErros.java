@@ -43,11 +43,6 @@ public class TratadorDeErros {
         return resposta(HttpStatus.CONFLICT, e.getMessage());
     }
 
-    @ExceptionHandler(NaoAutorizadoException.class)
-    public ResponseEntity<RespostaErro> naoAutorizado(NaoAutorizadoException e) {
-        return resposta(HttpStatus.UNAUTHORIZED, e.getMessage());
-    }
-
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<RespostaErro> jsonInvalido(HttpMessageNotReadableException e) {
         return resposta(HttpStatus.BAD_REQUEST,

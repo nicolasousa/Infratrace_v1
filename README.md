@@ -21,8 +21,10 @@ Documentação completa da API: [`docs/API.md`](docs/API.md).
    Opcional: `INFRATRACE_ANEXOS_DIR=<pasta>` define onde os anexos são gravados. O padrão é
    `anexos/`, dentro da pasta onde a aplicação roda.
 4. Rode `InfratraceApplication`. O console deve mostrar `Tomcat started on port 8080`.
-5. No **Postman**, importe `docs/InfraTrace.postman_collection.json` e rode, nesta ordem,
-   *Primeiro admin* e *Login*. O token é salvo sozinho.
+5. No **Postman**, importe `docs/InfraTrace.postman_collection.json` e use as requisições
+   direto. Não há login nesta fase: as alterações ficam registradas em nome do
+   **Administrador** (id 1) criado pelo script. Para registrar em nome de outro usuário,
+   envie o cabeçalho `X-Usuario-Id`.
 
 Teste automático (com o banco recém-criado e a API rodando):
 `powershell -ExecutionPolicy Bypass -File docs\teste_api.ps1`
@@ -38,8 +40,8 @@ backend-java/Infratrace/src/main/java/br/com/infratrace/
 ├── model/        entidades (espelham as tabelas)
 ├── dto/          dados que entram e saem da API
 ├── exception/    exceções do sistema e conversão em respostas HTTP
-├── seguranca/    hash de senha, sessões e controle de acesso por perfil
-└── config/       conexão com o banco, transação manual, pasta de anexos e registro do interceptor
+└── config/       conexão com o banco, transação manual, pasta de anexos e o interceptor
+                  que identifica o usuário responsável por cada alteração
 database/infratrace_mysql.sql   script oficial do banco (tabelas, triggers, dados iniciais)
 docs/                            documentação da API, coleção do Postman e teste automático
 ```
@@ -47,6 +49,6 @@ docs/                            documentação da API, coleção do Postman e t
 ## Fluxo de uma requisição
 
 ```
-Postman → AutenticacaoInterceptor (token e perfil) → Controller → Service → DAO → MySQL
+Postman → UsuarioResponsavelInterceptor (quem fez?) → Controller → Service → DAO → MySQL
                                                        ↑ erros viram JSON no TratadorDeErros
 ```

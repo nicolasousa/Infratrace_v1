@@ -3,7 +3,7 @@ package br.com.infratrace.controller;
 import br.com.infratrace.dto.FinalizarManutencaoRequest;
 import br.com.infratrace.model.Manutencao;
 import br.com.infratrace.model.Usuario;
-import br.com.infratrace.seguranca.AutenticacaoInterceptor;
+import br.com.infratrace.config.UsuarioResponsavelInterceptor;
 import br.com.infratrace.service.ManutencaoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,13 +45,13 @@ public class ManutencaoController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Manutencao criar(@RequestBody Manutencao corpo,
-                            @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                            @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         return service.criar(corpo, usuario.getId());
     }
 
     @PutMapping("/{id}")
     public Manutencao atualizar(@PathVariable int id, @RequestBody Manutencao corpo,
-                                @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario)
+                                @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario)
             throws SQLException {
         return service.atualizar(id, corpo, usuario.getId());
     }
@@ -59,7 +59,7 @@ public class ManutencaoController {
     /** O corpo é opcional: sem ele, a manutenção é finalizada com a data de hoje. */
     @PatchMapping("/{id}/finalizar")
     public Manutencao finalizar(@PathVariable int id, @RequestBody(required = false) FinalizarManutencaoRequest corpo,
-                                @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario)
+                                @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario)
             throws SQLException {
         return service.finalizar(id, corpo, usuario.getId());
     }

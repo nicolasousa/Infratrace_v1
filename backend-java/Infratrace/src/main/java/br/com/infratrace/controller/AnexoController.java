@@ -2,7 +2,7 @@ package br.com.infratrace.controller;
 
 import br.com.infratrace.dto.AnexoResponse;
 import br.com.infratrace.model.Usuario;
-import br.com.infratrace.seguranca.AutenticacaoInterceptor;
+import br.com.infratrace.config.UsuarioResponsavelInterceptor;
 import br.com.infratrace.service.AnexoService;
 import br.com.infratrace.service.AnexoService.ArquivoAnexo;
 import org.springframework.core.io.PathResource;
@@ -51,7 +51,7 @@ public class AnexoController {
     public AnexoResponse anexar(@PathVariable int ativoId,
                                 @RequestParam("tipo") String tipo,
                                 @RequestParam("arquivo") MultipartFile arquivo,
-                                @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario)
+                                @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario)
             throws SQLException, IOException {
         return service.anexar(ativoId, tipo, arquivo, usuario.getId());
     }
@@ -77,7 +77,7 @@ public class AnexoController {
     @DeleteMapping("/anexos/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluir(@PathVariable int id,
-                        @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                        @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         service.excluir(id, usuario.getId());
     }
 }

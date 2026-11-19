@@ -12,7 +12,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/** SQL da tabela usuario. A senha nunca é gravada: só o hash dela (usr_senha_hash). */
+/**
+ * SQL da tabela usuario. Nesta fase não há login: usr_senha_hash (NOT NULL no banco) recebe
+ * o marcador "SEM_LOGIN", definido no UsuarioService.
+ */
 @Repository
 public class UsuarioDAO {
 
@@ -48,11 +51,12 @@ public class UsuarioDAO {
         }
     }
 
-    public int contar(Connection con) throws SQLException {
-        try (PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM usuario");
+    /** Usuário padrão das alterações sem o cabeçalho X-Usuario-Id: o ADMIN ativo de menor id. */
+    public Usuario buscarAdminPadrao(Connection con) throws SQLException {
+        String sql = COLUNAS + " WHERE usr_perfil = 'ADMIN' AND usr_ativo = TRUE ORDER BY usr_id LIMIT 1";
+        try (PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-            rs.next();
-            return rs.getInt(1);
+            return rs.next() ? mapear(rs) : null;
         }
     }
 

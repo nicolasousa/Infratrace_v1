@@ -2,7 +2,7 @@ package br.com.infratrace.controller;
 
 import br.com.infratrace.model.Aluguel;
 import br.com.infratrace.model.Usuario;
-import br.com.infratrace.seguranca.AutenticacaoInterceptor;
+import br.com.infratrace.config.UsuarioResponsavelInterceptor;
 import br.com.infratrace.service.AluguelService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -45,20 +45,20 @@ public class AluguelController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Aluguel criar(@RequestBody Aluguel corpo,
-                         @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                         @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         return service.criar(corpo, usuario.getId());
     }
 
     @PutMapping("/{id}")
     public Aluguel atualizar(@PathVariable int id, @RequestBody Aluguel corpo,
-                             @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                             @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         return service.atualizar(id, corpo, usuario.getId());
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluir(@PathVariable int id,
-                        @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                        @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         service.excluir(id, usuario.getId());
     }
 }

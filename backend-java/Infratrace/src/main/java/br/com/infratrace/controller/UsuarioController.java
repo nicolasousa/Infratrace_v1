@@ -3,7 +3,7 @@ package br.com.infratrace.controller;
 import br.com.infratrace.dto.UsuarioRequest;
 import br.com.infratrace.dto.UsuarioResponse;
 import br.com.infratrace.model.Usuario;
-import br.com.infratrace.seguranca.AutenticacaoInterceptor;
+import br.com.infratrace.config.UsuarioResponsavelInterceptor;
 import br.com.infratrace.service.UsuarioService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.sql.SQLException;
 import java.util.List;
 
-/** Endpoints de usuários (/usuarios). Só ADMIN acessa (regra no AutenticacaoInterceptor). */
+/** Endpoints de usuários (/usuarios): cadastro de quem opera o sistema. Nesta fase não há login. */
 @RestController
 @RequestMapping("/usuarios")
 public class UsuarioController {
@@ -44,21 +44,21 @@ public class UsuarioController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public UsuarioResponse criar(@RequestBody UsuarioRequest corpo,
-                                 @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario)
+                                 @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario)
             throws SQLException {
         return service.criar(corpo, usuario.getId());
     }
 
     @PutMapping("/{id}")
     public UsuarioResponse atualizar(@PathVariable int id, @RequestBody UsuarioRequest corpo,
-                                     @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario)
+                                     @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario)
             throws SQLException {
         return service.atualizar(id, corpo, usuario.getId());
     }
 
     @PatchMapping("/{id}/inativar")
     public UsuarioResponse inativar(@PathVariable int id,
-                                    @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario)
+                                    @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario)
             throws SQLException {
         return service.inativar(id, usuario.getId());
     }

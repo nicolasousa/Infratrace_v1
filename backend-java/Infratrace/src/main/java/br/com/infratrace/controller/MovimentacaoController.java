@@ -3,7 +3,7 @@ package br.com.infratrace.controller;
 import br.com.infratrace.dto.MovimentacaoRequest;
 import br.com.infratrace.model.Movimentacao;
 import br.com.infratrace.model.Usuario;
-import br.com.infratrace.seguranca.AutenticacaoInterceptor;
+import br.com.infratrace.config.UsuarioResponsavelInterceptor;
 import br.com.infratrace.service.MovimentacaoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,7 +43,7 @@ public class MovimentacaoController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Movimentacao movimentar(@RequestBody MovimentacaoRequest corpo,
-                                   @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario)
+                                   @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario)
             throws SQLException {
         return service.movimentar(corpo, usuario.getId());
     }

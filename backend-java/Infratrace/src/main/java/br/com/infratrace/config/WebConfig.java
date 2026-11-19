@@ -1,22 +1,21 @@
 package br.com.infratrace.config;
 
-import br.com.infratrace.seguranca.AutenticacaoInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/** Registra o interceptor de autenticação para todas as rotas da API. */
+/** Registra o interceptor que identifica o usuário responsável por cada alteração. */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    private final AutenticacaoInterceptor autenticacao;
+    private final UsuarioResponsavelInterceptor usuarioResponsavel;
 
-    public WebConfig(AutenticacaoInterceptor autenticacao) {
-        this.autenticacao = autenticacao;
+    public WebConfig(UsuarioResponsavelInterceptor usuarioResponsavel) {
+        this.usuarioResponsavel = usuarioResponsavel;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(autenticacao).addPathPatterns("/**");
+        registry.addInterceptor(usuarioResponsavel).addPathPatterns("/**");
     }
 }

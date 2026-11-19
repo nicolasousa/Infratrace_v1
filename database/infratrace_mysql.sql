@@ -443,3 +443,9 @@ INSERT INTO tipo_ativo (tpa_nome) VALUES
 
 INSERT INTO tipo_cliente (tpc_nome) VALUES
 ('Corporativo'), ('Provedor'), ('Governo');
+
+-- Usuário padrão. Nesta fase o sistema não tem login: as alterações feitas sem o cabeçalho
+-- X-Usuario-Id ficam registradas em nome deste ADMIN (log_auditoria, movimentacao, manutencao).
+-- usr_senha_hash é NOT NULL; 'SEM_LOGIN' é só um marcador (não é uma senha).
+INSERT INTO usuario (usr_nome, usr_email, usr_senha_hash, usr_perfil) VALUES
+('Administrador', 'admin@infratrace.local', 'SEM_LOGIN', 'ADMIN');

@@ -3,17 +3,12 @@ package br.com.infratrace.service;
 import br.com.infratrace.config.Conexao;
 import br.com.infratrace.config.Transacao;
 import br.com.infratrace.dao.UsuarioDAO;
-import br.com.infratrace.dto.LoginRequest;
-import br.com.infratrace.dto.LoginResponse;
 import br.com.infratrace.dto.UsuarioRequest;
 import br.com.infratrace.dto.UsuarioResponse;
 import br.com.infratrace.exception.ConflitoException;
-import br.com.infratrace.exception.NaoAutorizadoException;
 import br.com.infratrace.exception.NaoEncontradoException;
 import br.com.infratrace.exception.NegocioException;
 import br.com.infratrace.model.Usuario;
-import br.com.infratrace.seguranca.SenhaHash;
-import br.com.infratrace.seguranca.Sessoes;
 import org.springframework.stereotype.Service;
 
 import java.sql.Connection;
@@ -25,71 +20,32 @@ import static br.com.infratrace.service.Validacoes.opcao;
 import static br.com.infratrace.service.Validacoes.texto;
 
 /**
- * Usuários, login e perfis (RF-05).
- *  - A senha só existe em memória durante a requisição; no banco vai o hash (SenhaHash).
+ * Cadastro de usuários (quem opera o sistema).
+ *
+ * Nesta fase NÃO há login: o usuário serve para registrar quem fez cada movimentação, manutenção
+ * e alteração (log_auditoria). O perfil (ADMIN, TECNICO, AUDITOR) é guardado, mas ainda não
+ * restringe acesso.
  *  - E-mail é único e guardado em minúsculas.
  *  - Usuários não são excluídos (são referenciados no log e nas movimentações): são inativados.
- *  - O sistema nunca pode ficar sem nenhum ADMIN ativo.
+ *  - O sistema nunca fica sem nenhum ADMIN ativo, porque é ele que responde pelas alterações
+ *    enviadas sem o cabeçalho X-Usuario-Id.
  */
 @Service
 public class UsuarioService {
 
     private static final String ENTIDADE = "usuario";
     public static final Set<String> PERFIS = Set.of("ADMIN", "TECNICO", "AUDITOR");
-    private static final int SENHA_MINIMA = 8;
+
+    /** usr_senha_hash é NOT NULL no banco. Sem login, gravamos este marcador no lugar do hash. */
+    private static final String SEM_LOGIN = "SEM_LOGIN";
 
     private final UsuarioDAO dao;
-    private final Sessoes sessoes;
     private final Auditoria auditoria;
 
-    public UsuarioService(UsuarioDAO dao, Sessoes sessoes, Auditoria auditoria) {
+    public UsuarioService(UsuarioDAO dao, Auditoria auditoria) {
         this.dao = dao;
-        this.sessoes = sessoes;
         this.auditoria = auditoria;
     }
-
-    // ---------------------------------------------------------------- login
-
-    public LoginResponse login(LoginRequest pedido) throws SQLException {
-        if (pedido.email() == null || pedido.senha() == null) {
-            throw new NaoAutorizadoException("Informe e-mail e senha");
-        }
-        Usuario usuario;
-        try (Connection con = Conexao.getConexao()) {
-            usuario = dao.buscarPorEmail(con, pedido.email().trim().toLowerCase());
-        }
-        // Mesma mensagem para "e-mail não existe" e "senha errada": não revela quais e-mails existem.
-        if (usuario == null || !SenhaHash.confere(pedido.senha(), usuario.getSenhaHash())) {
-            throw new NaoAutorizadoException("E-mail ou senha inválidos");
-        }
-        if (!usuario.getAtivo()) {
-            throw new NaoAutorizadoException("Usuário inativo");
-        }
-        return new LoginResponse(sessoes.abrir(usuario.getId()), UsuarioResponse.de(usuario));
-    }
-
-    public void logout(String token) {
-        sessoes.encerrar(token);
-    }
-
-    /**
-     * Cria o primeiro ADMIN. Só funciona com a tabela usuario vazia; depois disso, novos usuários
-     * são criados por um ADMIN logado em POST /usuarios. Evita deixar senha de admin no script SQL.
-     */
-    public UsuarioResponse criarPrimeiroAdmin(UsuarioRequest pedido) throws SQLException {
-        Usuario novo = montarNovo(pedido, "ADMIN");
-        return Transacao.executar(con -> {
-            if (dao.contar(con) > 0) {
-                throw new ConflitoException("Já existem usuários cadastrados. Peça a um ADMIN para criar seu acesso.");
-            }
-            novo.setId(dao.inserir(con, novo));
-            UsuarioResponse resposta = UsuarioResponse.de(dao.buscarPorId(con, novo.getId()));
-            auditoria.registrar(con, novo.getId(), Auditoria.INSERT, ENTIDADE, novo.getId(), null, resposta);
-            return resposta;
-        });
-    }
-
-    // ---------------------------------------------------------------- CRUD
 
     public List<UsuarioResponse> listar() throws SQLException {
         try (Connection con = Conexao.getConexao()) {
@@ -103,49 +59,49 @@ public class UsuarioService {
         }
     }
 
-    public UsuarioResponse criar(UsuarioRequest pedido, int usuarioLogadoId) throws SQLException {
-        Usuario novo = montarNovo(pedido, null);
+    public UsuarioResponse criar(UsuarioRequest pedido, int responsavelId) throws SQLException {
+        Usuario novo = new Usuario();
+        novo.setNome(texto(pedido.nome(), "nome", 128));
+        novo.setEmail(email(pedido.email()));
+        novo.setPerfil(opcao(pedido.perfil(), "perfil", PERFIS));
+        novo.setSenhaHash(SEM_LOGIN);
+        novo.setAtivo(true);
         return Transacao.executar(con -> {
             conferirEmailLivre(con, novo.getEmail(), null);
             novo.setId(dao.inserir(con, novo));
             UsuarioResponse resposta = UsuarioResponse.de(dao.buscarPorId(con, novo.getId()));
-            auditoria.registrar(con, usuarioLogadoId, Auditoria.INSERT, ENTIDADE, novo.getId(), null, resposta);
+            auditoria.registrar(con, responsavelId, Auditoria.INSERT, ENTIDADE, novo.getId(), null, resposta);
             return resposta;
         });
     }
 
-    /** Altera nome, e-mail e perfil. Se "senha" vier preenchida, troca a senha também. */
-    public UsuarioResponse atualizar(int id, UsuarioRequest pedido, int usuarioLogadoId) throws SQLException {
+    public UsuarioResponse atualizar(int id, UsuarioRequest pedido, int responsavelId) throws SQLException {
         String nome = texto(pedido.nome(), "nome", 128);
         String email = email(pedido.email());
         String perfil = opcao(pedido.perfil(), "perfil", PERFIS);
-        String novaSenha = pedido.senha() == null || pedido.senha().isEmpty() ? null : senha(pedido.senha());
 
         return Transacao.executar(con -> {
             Usuario atual = obter(con, id);
             UsuarioResponse anterior = UsuarioResponse.de(atual);
             conferirEmailLivre(con, email, id);
-            if ("ADMIN".equals(atual.getPerfil()) && !"ADMIN".equals(perfil)) {
+            if ("ADMIN".equals(atual.getPerfil()) && !"ADMIN".equals(perfil) && atual.getAtivo()) {
                 conferirOutroAdmin(con, id);
             }
             atual.setNome(nome);
             atual.setEmail(email);
             atual.setPerfil(perfil);
-            if (novaSenha != null) {
-                atual.setSenhaHash(SenhaHash.gerar(novaSenha));
-            }
             dao.atualizar(con, atual);
             UsuarioResponse resposta = UsuarioResponse.de(atual);
-            auditoria.registrar(con, usuarioLogadoId, Auditoria.UPDATE, ENTIDADE, id, anterior, resposta);
+            auditoria.registrar(con, responsavelId, Auditoria.UPDATE, ENTIDADE, id, anterior, resposta);
             return resposta;
         });
     }
 
-    public UsuarioResponse inativar(int id, int usuarioLogadoId) throws SQLException {
-        if (id == usuarioLogadoId) {
-            throw new NegocioException("Você não pode inativar o próprio usuário");
+    public UsuarioResponse inativar(int id, int responsavelId) throws SQLException {
+        if (id == responsavelId) {
+            throw new NegocioException("O usuário responsável pela requisição não pode inativar a si mesmo");
         }
-        UsuarioResponse resposta = Transacao.executar(con -> {
+        return Transacao.executar(con -> {
             Usuario atual = obter(con, id);
             if (!atual.getAtivo()) {
                 throw new ConflitoException("O usuário já está inativo");
@@ -157,30 +113,16 @@ public class UsuarioService {
             atual.setAtivo(false);
             dao.atualizar(con, atual);
             UsuarioResponse depois = UsuarioResponse.de(atual);
-            auditoria.registrar(con, usuarioLogadoId, Auditoria.INATIVAR, ENTIDADE, id, anterior, depois);
+            auditoria.registrar(con, responsavelId, Auditoria.INATIVAR, ENTIDADE, id, anterior, depois);
             return depois;
         });
-        sessoes.encerrarTodasDoUsuario(id);   // derruba quem estiver logado com esse usuário
-        return resposta;
     }
-
-    // ---------------------------------------------------------------- auxiliares
 
     private Usuario obter(Connection con, int id) throws SQLException {
         Usuario u = dao.buscarPorId(con, id);
         if (u == null) {
             throw new NaoEncontradoException("Usuário " + id + " não encontrado");
         }
-        return u;
-    }
-
-    private Usuario montarNovo(UsuarioRequest pedido, String perfilForcado) {
-        Usuario u = new Usuario();
-        u.setNome(texto(pedido.nome(), "nome", 128));
-        u.setEmail(email(pedido.email()));
-        u.setPerfil(perfilForcado != null ? perfilForcado : opcao(pedido.perfil(), "perfil", PERFIS));
-        u.setSenhaHash(SenhaHash.gerar(senha(pedido.senha())));
-        u.setAtivo(true);
         return u;
     }
 
@@ -203,12 +145,5 @@ public class UsuarioService {
             throw new NegocioException("E-mail inválido");
         }
         return email;
-    }
-
-    private static String senha(String valor) {
-        if (valor == null || valor.length() < SENHA_MINIMA) {
-            throw new NegocioException("A senha deve ter pelo menos " + SENHA_MINIMA + " caracteres");
-        }
-        return valor;
     }
 }

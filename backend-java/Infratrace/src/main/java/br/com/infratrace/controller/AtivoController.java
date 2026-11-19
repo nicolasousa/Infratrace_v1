@@ -5,7 +5,7 @@ import br.com.infratrace.model.Ativo;
 import br.com.infratrace.model.Manutencao;
 import br.com.infratrace.model.Movimentacao;
 import br.com.infratrace.model.Usuario;
-import br.com.infratrace.seguranca.AutenticacaoInterceptor;
+import br.com.infratrace.config.UsuarioResponsavelInterceptor;
 import br.com.infratrace.service.AtivoService;
 import br.com.infratrace.service.ManutencaoService;
 import br.com.infratrace.service.MovimentacaoService;
@@ -68,26 +68,26 @@ public class AtivoController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Ativo criar(@RequestBody Ativo corpo,
-                       @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                       @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         return service.criar(corpo, usuario.getId());
     }
 
     @PutMapping("/{id}")
     public Ativo atualizar(@PathVariable int id, @RequestBody Ativo corpo,
-                           @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                           @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         return service.atualizar(id, corpo, usuario.getId());
     }
 
     @PostMapping("/{id}/descarte")
     public Ativo descartar(@PathVariable int id, @RequestBody DescarteRequest corpo,
-                           @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                           @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         return service.descartar(id, corpo, usuario.getId());
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluir(@PathVariable int id,
-                        @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                        @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         service.excluir(id, usuario.getId());
     }
 }

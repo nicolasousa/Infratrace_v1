@@ -9,50 +9,27 @@ API REST para gestão de ativos de TI e ocupação de racks em data center.
 
 ---
 
-## 1. Autenticação
+## 1. Acesso e usuário responsável
 
-1. Com o banco vazio, crie o primeiro administrador (rota pública, funciona uma única vez):
+Nesta fase **não há login**: todas as rotas podem ser usadas direto, sem token.
 
-   ```http
-   POST /auth/primeiro-admin
-   { "nome": "Administrador", "email": "admin@infratrace.local", "senha": "Admin@1234" }
-   ```
+O banco, porém, exige que movimentações, manutenções e o log de auditoria tenham um usuário
+responsável (`fk_usr_id NOT NULL`). Por isso, toda alteração (POST, PUT, PATCH e DELETE) é
+registrada em nome de alguém:
 
-2. Faça login e copie o `token`:
+- **Sem nada a mais:** quem responde é o usuário padrão, o **Administrador** (id 1), criado pelo
+  script do banco.
+- **Com o cabeçalho `X-Usuario-Id`:** para registrar a ação em nome de outro usuário cadastrado,
+  envie o id dele.
 
-   ```http
-   POST /auth/login
-   { "email": "admin@infratrace.local", "senha": "Admin@1234" }
-   ```
-   ```json
-   { "token": "kq3...", "usuario": { "id": 1, "nome": "Administrador", "perfil": "ADMIN", ... } }
-   ```
+  ```
+  X-Usuario-Id: 2
+  ```
 
-3. Envie o token em **todas** as outras requisições:
+  Se o id não existir, o usuário estiver inativo ou o valor não for um número, a resposta é **400**.
 
-   ```
-   Authorization: Bearer kq3...
-   ```
-
-O token vale 8 horas e é perdido quando a aplicação reinicia (as sessões ficam em memória).
-Na coleção do Postman, a requisição de login já salva o token automaticamente.
-
-| Método | Rota | Descrição |
-|---|---|---|
-| POST | `/auth/primeiro-admin` | Cria o primeiro ADMIN (só com a tabela `usuario` vazia). Público. |
-| POST | `/auth/login` | Devolve o token. Público. |
-| POST | `/auth/logout` | Encerra a sessão do token enviado. |
-| GET | `/auth/me` | Dados do usuário logado. |
-
-### Perfis e permissões
-
-| Perfil | Pode |
-|---|---|
-| **ADMIN** | Tudo. |
-| **TECNICO** | Consultar tudo, exceto usuários e auditoria. Criar e alterar **ativos, anexos, movimentações, manutenções e notas fiscais**. |
-| **AUDITOR** | Só consultar (GET), incluindo a auditoria. Não acessa usuários. |
-
-Sem token ou com token inválido → **401**. Perfil sem permissão → **403**.
+O perfil (`ADMIN`, `TECNICO`, `AUDITOR`) é guardado no cadastro, mas ainda não limita o que cada
+um pode fazer.
 
 ---
 
@@ -66,9 +43,7 @@ Todo erro tem o mesmo formato:
 
 | Status | Quando |
 |---|---|
-| 400 | Campo obrigatório faltando, valor inválido, JSON malformado, slot acima da capacidade. |
-| 401 | Sem login, token inválido ou expirado, usuário inativo. |
-| 403 | Perfil sem permissão. |
+| 400 | Campo obrigatório faltando, valor inválido, JSON malformado, slot acima da capacidade, `X-Usuario-Id` inválido. |
 | 404 | Registro ou rota inexistente. |
 | 409 | Conflito com os dados: slot ocupado, aluguel sobreposto, valor duplicado (UNIQUE), exclusão de registro em uso (FK), erro 1644 dos triggers. |
 | 413 | Anexo maior que 10 MB. |
@@ -221,14 +196,14 @@ Abrir uma manutenção sem `dataFim` coloca o ativo em `EM_MANUTENCAO`. Ao final
 
 O mesmo rack não pode ter dois aluguéis com períodos sobrepostos (409).
 
-### Usuários (só ADMIN)
+### Usuários
 
 | Método | Rota | Corpo |
 |---|---|---|
-| GET | `/usuarios` · `/usuarios/{id}` | Nunca devolve a senha nem o hash |
-| POST | `/usuarios` | `nome`*, `email`*, `senha`* (mínimo de 8 caracteres), `perfil`* |
-| PUT | `/usuarios/{id}` | `nome`*, `email`*, `perfil`*, `senha` (opcional: só troca se for enviada) |
-| PATCH | `/usuarios/{id}/inativar` | Derruba as sessões do usuário. Não é possível se inativar nem deixar o sistema sem ADMIN. |
+| GET | `/usuarios` · `/usuarios/{id}` | |
+| POST | `/usuarios` | `nome`*, `email`* (único), `perfil`* (`ADMIN`, `TECNICO` ou `AUDITOR`) |
+| PUT | `/usuarios/{id}` | `nome`*, `email`*, `perfil`* |
+| PATCH | `/usuarios/{id}/inativar` | Usuários não são excluídos. O responsável pela requisição não pode inativar a si mesmo, e o sistema não pode ficar sem ADMIN ativo. |
 
 ### Configurações, alertas e auditoria
 
@@ -238,7 +213,7 @@ O mesmo rack não pode ter dois aluguéis com períodos sobrepostos (409).
 | PUT | `/configuracoes/{chave}` | `{ "valor": "60" }`. `alerta_garantia_dias`: 30, 60 ou 90. `alerta_aluguel_dias`: 15, 30 ou 60. |
 | GET | `/alertas/garantias` | Ativos com garantia vencendo dentro do prazo configurado |
 | GET | `/alertas/alugueis` | Aluguéis terminando dentro do prazo configurado |
-| GET | `/auditoria?entidade=&entidadeId=&usuarioId=&limite=` | Log de alterações (ADMIN e AUDITOR). `limite`: padrão 200, máximo 1000. |
+| GET | `/auditoria?entidade=&entidadeId=&usuarioId=&limite=` | Log de alterações. `limite`: padrão 200, máximo 1000. |
 
 Cada alteração gera uma linha em `log_auditoria`, com os valores anterior e novo em JSON, **na
 mesma transação** da alteração.
@@ -247,7 +222,7 @@ mesma transação** da alteração.
 
 ## 4. Roteiro sugerido de teste no Postman
 
-1. `POST /auth/primeiro-admin` → `POST /auth/login`
+1. `GET /usuarios` (o Administrador já existe) → `POST /usuarios` (um técnico)
 2. `POST /salas` → `POST /fileiras` → `POST /racks` (42 slots)
 3. `POST /ativos` com `rackId` e slots 1-2 → `POST /ativos` sem rack (estoque)
 4. `POST /movimentacoes` levando o segundo ativo para os slots 10-11

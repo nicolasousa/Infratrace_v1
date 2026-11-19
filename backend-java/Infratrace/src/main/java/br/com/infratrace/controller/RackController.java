@@ -3,7 +3,7 @@ package br.com.infratrace.controller;
 import br.com.infratrace.dto.OcupacaoRackResponse;
 import br.com.infratrace.model.Rack;
 import br.com.infratrace.model.Usuario;
-import br.com.infratrace.seguranca.AutenticacaoInterceptor;
+import br.com.infratrace.config.UsuarioResponsavelInterceptor;
 import br.com.infratrace.service.RackService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -51,20 +51,20 @@ public class RackController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Rack criar(@RequestBody Rack corpo,
-                      @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                      @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         return service.criar(corpo, usuario.getId());
     }
 
     @PutMapping("/{id}")
     public Rack atualizar(@PathVariable int id, @RequestBody Rack corpo,
-                          @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                          @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         return service.atualizar(id, corpo, usuario.getId());
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluir(@PathVariable int id,
-                        @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario) throws SQLException {
+                        @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario) throws SQLException {
         service.excluir(id, usuario.getId());
     }
 }

@@ -93,16 +93,18 @@ ao explicar, use os comentários das classes e o `docs/API.md`.
 Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
 - `controller/` → `service/` → `dao/`, um conjunto por entidade, + `model/`, `dto/`, `exception/`
   (`TratadorDeErros` converte exceções e códigos MySQL 1644/1062/1451/1452/3819 em HTTP),
-  `seguranca/` (PBKDF2 do próprio Java, sessões em memória, `AutenticacaoInterceptor` com os
-  perfis) e `config/` (`Conexao`, `Transacao`, `WebConfig`).
+  e `config/` (`Conexao`, `Transacao`, `WebConfig`, `UsuarioResponsavelInterceptor`).
+- **Sem login** (decisão do grupo em 2026-11-18, para a apresentação): login, sessões, hash de
+  senha e perfis restringindo acesso foram removidos (estão no histórico do Git, commit
+  `91a81ed`). O `UsuarioResponsavelInterceptor` define quem responde por cada escrita: cabeçalho
+  `X-Usuario-Id` ou, sem ele, o primeiro ADMIN ativo. O script SQL cria o usuário
+  "Administrador" (id 1) com `usr_senha_hash = 'SEM_LOGIN'` (a coluna é NOT NULL).
 - Padrão de transação: os DAOs recebem a `Connection`; o Service abre, faz
   `setAutoCommit(false)`, `commit()`/`rollback()`. `config/Transacao` centraliza isso;
   `MovimentacaoService` está escrito por extenso de propósito (exemplo didático).
 - Auditoria: toda escrita grava `log_auditoria` na mesma transação (JSON com antes/depois).
 - Racks: `RackService.validarPosicao` trava o rack com `SELECT ... FOR UPDATE` e valida
   capacidade e sobreposição antes dos triggers.
-- Primeiro ADMIN: `POST /auth/primeiro-admin` (só com a tabela `usuario` vazia); nenhuma senha
-  fica no script SQL.
 - Spring Boot 4.1.2 só com `spring-boot-starter-web`; Jackson 3 (`tools.jackson.*`).
 - `application.properties` não tem `spring.datasource.*`: a `Conexao` lê `System.getenv`.
 - JDK 21 em `~/.jdks/openjdk-21.0.2`; Maven do IntelliJ em
@@ -111,18 +113,16 @@ Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
   fora do Git), salvos com nome UUID; `anx_caminho` guarda esse nome. Como o disco não entra na
   transação, a ordem é arquivo → INSERT (e apaga o arquivo se o INSERT falhar) e DELETE → commit
   → apaga o arquivo. Limite de 10 MB (413).
-- Documentação: `docs/API.md`, `docs/InfraTrace.postman_collection.json` (68 requisições; o
-  gerador não fica no repositório) e `docs/teste_api.ps1` (96 verificações de ponta a ponta;
-  todas passaram em 2026-11-18; envios de anexo usam `curl.exe`).
+- Documentação: `docs/API.md`, `docs/InfraTrace.postman_collection.json` (64 requisições;
+  editada por script, o gerador não fica no repositório) e `docs/teste_api.ps1` (82 verificações
+  de ponta a ponta; todas passaram em 2026-11-18; envios de anexo usam `curl.exe`).
 
 ## Pendente
 
-1. **Recuperação de senha** (`usr_token_recuperacao`, `usr_token_expiracao`): não implementada.
-   Exige enviar o token por e-mail (SMTP) ou, sem e-mail, um ADMIN redefinir a senha (isso já é
-   possível em `PUT /usuarios/{id}`).
-2. Sessões ficam em memória e somem ao reiniciar (simplificação consciente; alternativa: JWT).
-3. Não há testes JUnit; só o teste de ponta a ponta em PowerShell e a coleção do Postman.
-4. Listagens sem paginação.
-5. Conferir com o enunciado do professor se há requisitos (RF) não cobertos.
-6. Antes de dizer o que está ou não no GitHub, confira com `git fetch` + `git status -sb`
+1. Login e recuperação de senha ficaram fora desta fase por decisão do grupo. As colunas
+   `usr_senha_hash`, `usr_token_recuperacao` e `usr_token_expiracao` continuam no banco.
+2. Não há testes JUnit; só o teste de ponta a ponta em PowerShell e a coleção do Postman.
+3. Listagens sem paginação.
+4. Conferir com o enunciado do professor se há requisitos (RF) não cobertos.
+5. Antes de dizer o que está ou não no GitHub, confira com `git fetch` + `git status -sb`
    (em 2026-11-18 tudo foi enviado até o commit `91a81ed`).

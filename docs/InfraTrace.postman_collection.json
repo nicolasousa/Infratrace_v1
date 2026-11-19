@@ -1,27 +1,13 @@
 {
     "info":  {
                  "name":  "InfraTrace API",
-                 "description":  "Coleção da API do InfraTrace. 1) Rode \"Primeiro admin\" (só com banco vazio). 2) Rode \"Login\": o token é salvo sozinho na variável {{token}}. Os ids usados nas rotas estão nas variáveis da coleção (aba Variables) e valem para um banco recém-criado.",
+                 "description":  "Coleção da API do InfraTrace. Não há login: as alterações ficam registradas em nome do Administrador criado pelo script do banco. Para registrar em nome de outro usuário, ative o cabeçalho X-Usuario-Id (já incluído, desativado, nas requisições de escrita). Os ids usados nas rotas estão nas variáveis da coleção (aba Variables) e valem para um banco recém-criado.",
                  "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-             },
-    "auth":  {
-                 "type":  "bearer",
-                 "bearer":  [
-                                {
-                                    "key":  "token",
-                                    "value":  "{{token}}",
-                                    "type":  "string"
-                                }
-                            ]
              },
     "variable":  [
                      {
                          "key":  "baseUrl",
                          "value":  "http://localhost:8080"
-                     },
-                     {
-                         "key":  "token",
-                         "value":  ""
                      },
                      {
                          "key":  "salaId",
@@ -66,130 +52,7 @@
                  ],
     "item":  [
                  {
-                     "name":  "1. Autenticação",
-                     "item":  [
-                                  {
-                                      "name":  "Primeiro admin (banco vazio)",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "url":  {
-                                                                  "raw":  "{{baseUrl}}/auth/primeiro-admin",
-                                                                  "host":  [
-                                                                               "{{baseUrl}}"
-                                                                           ],
-                                                                  "path":  [
-                                                                               "auth",
-                                                                               "primeiro-admin"
-                                                                           ]
-                                                              },
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{ \"nome\": \"Administrador\", \"email\": \"admin@infratrace.local\", \"senha\": \"Admin@1234\" }",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "auth":  {
-                                                                   "type":  "noauth"
-                                                               }
-                                                  }
-                                  },
-                                  {
-                                      "name":  "Login",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
-                                                      "url":  {
-                                                                  "raw":  "{{baseUrl}}/auth/login",
-                                                                  "host":  [
-                                                                               "{{baseUrl}}"
-                                                                           ],
-                                                                  "path":  [
-                                                                               "auth",
-                                                                               "login"
-                                                                           ]
-                                                              },
-                                                      "body":  {
-                                                                   "mode":  "raw",
-                                                                   "raw":  "{ \"email\": \"admin@infratrace.local\", \"senha\": \"Admin@1234\" }",
-                                                                   "options":  {
-                                                                                   "raw":  {
-                                                                                               "language":  "json"
-                                                                                           }
-                                                                               }
-                                                               },
-                                                      "auth":  {
-                                                                   "type":  "noauth"
-                                                               }
-                                                  },
-                                      "event":  [
-                                                    {
-                                                        "listen":  "test",
-                                                        "script":  {
-                                                                       "type":  "text/javascript",
-                                                                       "exec":  [
-                                                                                    "pm.test(\"login OK\", () =\u003e pm.response.to.have.status(200));",
-                                                                                    "pm.collectionVariables.set(\"token\", pm.response.json().token);"
-                                                                                ]
-                                                                   }
-                                                    }
-                                                ]
-                                  },
-                                  {
-                                      "name":  "Quem sou eu",
-                                      "request":  {
-                                                      "method":  "GET",
-                                                      "header":  [
-
-                                                                 ],
-                                                      "url":  {
-                                                                  "raw":  "{{baseUrl}}/auth/me",
-                                                                  "host":  [
-                                                                               "{{baseUrl}}"
-                                                                           ],
-                                                                  "path":  [
-                                                                               "auth",
-                                                                               "me"
-                                                                           ]
-                                                              }
-                                                  }
-                                  },
-                                  {
-                                      "name":  "Logout",
-                                      "request":  {
-                                                      "method":  "POST",
-                                                      "header":  [
-
-                                                                 ],
-                                                      "url":  {
-                                                                  "raw":  "{{baseUrl}}/auth/logout",
-                                                                  "host":  [
-                                                                               "{{baseUrl}}"
-                                                                           ],
-                                                                  "path":  [
-                                                                               "auth",
-                                                                               "logout"
-                                                                           ]
-                                                              }
-                                                  }
-                                  }
-                              ]
-                 },
-                 {
-                     "name":  "2. Usuários (ADMIN)",
+                     "name":  "1. Usuários",
                      "item":  [
                                   {
                                       "name":  "Listar",
@@ -232,12 +95,6 @@
                                       "name":  "Criar técnico",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/usuarios",
                                                                   "host":  [
@@ -249,25 +106,31 @@
                                                               },
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{ \"nome\": \"Técnico\", \"email\": \"tecnico@infratrace.local\", \"senha\": \"Tecnico@123\", \"perfil\": \"TECNICO\" }",
+                                                                   "raw":  "{ \"nome\": \"Técnico\", \"email\": \"tecnico@infratrace.local\", \"perfil\": \"TECNICO\" }",
                                                                    "options":  {
                                                                                    "raw":  {
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Criar auditor",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/usuarios",
                                                                   "host":  [
@@ -279,25 +142,31 @@
                                                               },
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{ \"nome\": \"Auditor\", \"email\": \"auditor@infratrace.local\", \"senha\": \"Auditor@123\", \"perfil\": \"AUDITOR\" }",
+                                                                   "raw":  "{ \"nome\": \"Auditor\", \"email\": \"auditor@infratrace.local\", \"perfil\": \"AUDITOR\" }",
                                                                    "options":  {
                                                                                    "raw":  {
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Alterar",
                                       "request":  {
                                                       "method":  "PUT",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/usuarios/{{usuarioId}}",
                                                                   "host":  [
@@ -316,16 +185,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Inativar",
                                       "request":  {
                                                       "method":  "PATCH",
-                                                      "header":  [
-
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/usuarios/{{usuarioId}}/inativar",
                                                                   "host":  [
@@ -336,13 +214,21 @@
                                                                                "{{usuarioId}}",
                                                                                "inativar"
                                                                            ]
-                                                              }
+                                                              },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   }
                               ]
                  },
                  {
-                     "name":  "3. Infraestrutura",
+                     "name":  "2. Infraestrutura",
                      "item":  [
                                   {
                                       "name":  "Listar salas",
@@ -366,12 +252,6 @@
                                       "name":  "Criar sala",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/salas",
                                                                   "host":  [
@@ -389,19 +269,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Alterar sala",
                                       "request":  {
                                                       "method":  "PUT",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/salas/{{salaId}}",
                                                                   "host":  [
@@ -420,16 +306,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Excluir sala",
                                       "request":  {
                                                       "method":  "DELETE",
-                                                      "header":  [
-
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/salas/{{salaId}}",
                                                                   "host":  [
@@ -439,7 +334,15 @@
                                                                                "salas",
                                                                                "{{salaId}}"
                                                                            ]
-                                                              }
+                                                              },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
@@ -470,12 +373,6 @@
                                       "name":  "Criar fileira",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/fileiras",
                                                                   "host":  [
@@ -493,19 +390,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Alterar fileira",
                                       "request":  {
                                                       "method":  "PUT",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/fileiras/{{fileiraId}}",
                                                                   "host":  [
@@ -524,7 +427,19 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
@@ -549,12 +464,6 @@
                                       "name":  "Criar rack 42U",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/racks",
                                                                   "host":  [
@@ -572,19 +481,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Alterar rack",
                                       "request":  {
                                                       "method":  "PUT",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/racks/{{rackId}}",
                                                                   "host":  [
@@ -603,7 +518,19 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
@@ -630,9 +557,6 @@
                                       "name":  "Excluir rack",
                                       "request":  {
                                                       "method":  "DELETE",
-                                                      "header":  [
-
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/racks/{{rackId}}",
                                                                   "host":  [
@@ -642,13 +566,21 @@
                                                                                "racks",
                                                                                "{{rackId}}"
                                                                            ]
-                                                              }
+                                                              },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   }
                               ]
                  },
                  {
-                     "name":  "4. Cadastros auxiliares",
+                     "name":  "3. Cadastros auxiliares",
                      "item":  [
                                   {
                                       "name":  "Listar tipos de ativo",
@@ -672,12 +604,6 @@
                                       "name":  "Criar tipo de ativo",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/tipos-ativo",
                                                                   "host":  [
@@ -695,7 +621,19 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
@@ -720,12 +658,6 @@
                                       "name":  "Criar tipo de cliente",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/tipos-cliente",
                                                                   "host":  [
@@ -743,7 +675,19 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
@@ -768,12 +712,6 @@
                                       "name":  "Criar nota fiscal",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/notas-fiscais",
                                                                   "host":  [
@@ -791,13 +729,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   }
                               ]
                  },
                  {
-                     "name":  "5. Ativos",
+                     "name":  "4. Ativos",
                      "item":  [
                                   {
                                       "name":  "Listar",
@@ -868,12 +818,6 @@
                                       "name":  "Criar já instalado (slots 1-2)",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/ativos",
                                                                   "host":  [
@@ -891,19 +835,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Criar no estoque",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/ativos",
                                                                   "host":  [
@@ -921,19 +871,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Erro: slots sobrepostos (409)",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/ativos",
                                                                   "host":  [
@@ -951,19 +907,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Erro: acima da capacidade (400)",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/ativos",
                                                                   "host":  [
@@ -981,19 +943,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Alterar dados",
                                       "request":  {
                                                       "method":  "PUT",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/ativos/{{ativoId}}",
                                                                   "host":  [
@@ -1012,7 +980,19 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
@@ -1059,12 +1039,6 @@
                                       "name":  "Descartar",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/ativos/{{ativoId}}/descarte",
                                                                   "host":  [
@@ -1084,16 +1058,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Excluir (só sem histórico)",
                                       "request":  {
                                                       "method":  "DELETE",
-                                                      "header":  [
-
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/ativos/{{ativoId}}",
                                                                   "host":  [
@@ -1103,13 +1086,21 @@
                                                                                "ativos",
                                                                                "{{ativoId}}"
                                                                            ]
-                                                              }
+                                                              },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   }
                               ]
                  },
                  {
-                     "name":  "6. Anexos",
+                     "name":  "5. Anexos",
                      "item":  [
                                   {
                                       "name":  "Listar anexos do ativo",
@@ -1135,9 +1126,6 @@
                                       "name":  "Enviar anexo (selecione o arquivo)",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/ativos/{{ativoId}}/anexos",
                                                                   "host":  [
@@ -1167,7 +1155,15 @@
                                                                                         "description":  "Clique em Select Files e escolha um PDF/imagem de até 10 MB"
                                                                                     }
                                                                                 ]
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
@@ -1213,9 +1209,6 @@
                                       "name":  "Excluir anexo",
                                       "request":  {
                                                       "method":  "DELETE",
-                                                      "header":  [
-
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/anexos/{{anexoId}}",
                                                                   "host":  [
@@ -1225,13 +1218,21 @@
                                                                                "anexos",
                                                                                "{{anexoId}}"
                                                                            ]
-                                                              }
+                                                              },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   }
                               ]
                  },
                  {
-                     "name":  "7. Movimentações",
+                     "name":  "6. Movimentações",
                      "item":  [
                                   {
                                       "name":  "Listar",
@@ -1255,12 +1256,6 @@
                                       "name":  "Mover ativo 2 do estoque para slots 10-11",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/movimentacoes",
                                                                   "host":  [
@@ -1278,19 +1273,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Erro: mover para slot ocupado (409)",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/movimentacoes",
                                                                   "host":  [
@@ -1308,19 +1309,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Mandar ativo 2 para o estoque",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/movimentacoes",
                                                                   "host":  [
@@ -1338,13 +1345,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   }
                               ]
                  },
                  {
-                     "name":  "8. Manutenções",
+                     "name":  "7. Manutenções",
                      "item":  [
                                   {
                                       "name":  "Listar",
@@ -1368,12 +1387,6 @@
                                       "name":  "Abrir manutenção",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/manutencoes",
                                                                   "host":  [
@@ -1391,19 +1404,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Alterar",
                                       "request":  {
                                                       "method":  "PUT",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/manutencoes/{{manutencaoId}}",
                                                                   "host":  [
@@ -1422,19 +1441,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Finalizar",
                                       "request":  {
                                                       "method":  "PATCH",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/manutencoes/{{manutencaoId}}/finalizar",
                                                                   "host":  [
@@ -1454,13 +1479,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   }
                               ]
                  },
                  {
-                     "name":  "9. Clientes e aluguéis",
+                     "name":  "8. Clientes e aluguéis",
                      "item":  [
                                   {
                                       "name":  "Listar clientes ativos",
@@ -1490,12 +1527,6 @@
                                       "name":  "Criar cliente",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/clientes",
                                                                   "host":  [
@@ -1513,19 +1544,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Alterar cliente",
                                       "request":  {
                                                       "method":  "PUT",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/clientes/{{clienteId}}",
                                                                   "host":  [
@@ -1544,16 +1581,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Inativar cliente",
                                       "request":  {
                                                       "method":  "PATCH",
-                                                      "header":  [
-
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/clientes/{{clienteId}}/inativar",
                                                                   "host":  [
@@ -1564,7 +1610,15 @@
                                                                                "{{clienteId}}",
                                                                                "inativar"
                                                                            ]
-                                                              }
+                                                              },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
@@ -1589,12 +1643,6 @@
                                       "name":  "Criar aluguel",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/alugueis",
                                                                   "host":  [
@@ -1612,19 +1660,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Erro: aluguel sobreposto (409)",
                                       "request":  {
                                                       "method":  "POST",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/alugueis",
                                                                   "host":  [
@@ -1642,19 +1696,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Alterar aluguel",
                                       "request":  {
                                                       "method":  "PUT",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/alugueis/{{aluguelId}}",
                                                                   "host":  [
@@ -1673,16 +1733,25 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {
                                       "name":  "Excluir aluguel",
                                       "request":  {
                                                       "method":  "DELETE",
-                                                      "header":  [
-
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/alugueis/{{aluguelId}}",
                                                                   "host":  [
@@ -1692,13 +1761,21 @@
                                                                                "alugueis",
                                                                                "{{aluguelId}}"
                                                                            ]
-                                                              }
+                                                              },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   }
                               ]
                  },
                  {
-                     "name":  "10. Configurações, alertas e auditoria",
+                     "name":  "9. Configurações, alertas e auditoria",
                      "item":  [
                                   {
                                       "name":  "Listar configurações",
@@ -1722,12 +1799,6 @@
                                       "name":  "Alterar prazo de garantia",
                                       "request":  {
                                                       "method":  "PUT",
-                                                      "header":  [
-                                                                     {
-                                                                         "key":  "Content-Type",
-                                                                         "value":  "application/json"
-                                                                     }
-                                                                 ],
                                                       "url":  {
                                                                   "raw":  "{{baseUrl}}/configuracoes/alerta_garantia_dias",
                                                                   "host":  [
@@ -1746,7 +1817,19 @@
                                                                                                "language":  "json"
                                                                                            }
                                                                                }
-                                                               }
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-Usuario-Id",
+                                                                         "value":  "{{usuarioId}}",
+                                                                         "disabled":  true,
+                                                                         "description":  "Opcional: id do usuário responsável. Sem ele, vale o Administrador (id 1)."
+                                                                     }
+                                                                 ]
                                                   }
                                   },
                                   {

@@ -7,7 +7,7 @@ import br.com.infratrace.model.Ativo;
 import br.com.infratrace.model.Configuracao;
 import br.com.infratrace.model.LogAuditoria;
 import br.com.infratrace.model.Usuario;
-import br.com.infratrace.seguranca.AutenticacaoInterceptor;
+import br.com.infratrace.config.UsuarioResponsavelInterceptor;
 import br.com.infratrace.service.AlertaService;
 import br.com.infratrace.service.ConfiguracaoService;
 import br.com.infratrace.service.ConsultaAuditoriaService;
@@ -49,7 +49,7 @@ public class ConsultasController {
 
     @PutMapping("/configuracoes/{chave}")
     public Configuracao alterarConfiguracao(@PathVariable String chave, @RequestBody ConfiguracaoRequest corpo,
-                                            @RequestAttribute(AutenticacaoInterceptor.USUARIO_LOGADO) Usuario usuario)
+                                            @RequestAttribute(UsuarioResponsavelInterceptor.USUARIO_RESPONSAVEL) Usuario usuario)
             throws SQLException {
         return configuracaoService.atualizar(chave, corpo.valor(), usuario.getId());
     }
