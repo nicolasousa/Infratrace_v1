@@ -4,8 +4,8 @@ import br.com.infratrace.config.Conexao;
 import br.com.infratrace.dao.AluguelDAO;
 import br.com.infratrace.dao.AtivoDAO;
 import br.com.infratrace.dto.AlertaResponse;
+import br.com.infratrace.dto.GarantiaVencendo;
 import br.com.infratrace.model.Aluguel;
-import br.com.infratrace.model.Ativo;
 import org.springframework.stereotype.Service;
 
 import java.sql.Connection;
@@ -30,13 +30,15 @@ public class AlertaService {
         this.configuracaoService = configuracaoService;
     }
 
-    /** Ativos (não descartados) cuja garantia vence de hoje até hoje + N dias. */
-    public AlertaResponse<Ativo> garantiasVencendo() throws SQLException {
+    /**
+     * Ativos (não descartados) cuja garantia vence de hoje até hoje + N dias, com o local de cada um.
+     * Os dados vêm da view View_garantia_ativo (ver AtivoDAO.listarGarantiaVencendo).
+     */
+    public AlertaResponse<GarantiaVencendo> garantiasVencendo() throws SQLException {
         try (Connection con = Conexao.getConexao()) {
             int dias = configuracaoService.valorInteiro(con, ConfiguracaoService.ALERTA_GARANTIA);
-            LocalDate hoje = LocalDate.now();
-            LocalDate ate = hoje.plusDays(dias);
-            List<Ativo> itens = ativoDAO.listarGarantiaVencendo(con, hoje, ate);
+            LocalDate ate = LocalDate.now().plusDays(dias);
+            List<GarantiaVencendo> itens = ativoDAO.listarGarantiaVencendo(con, dias);
             return new AlertaResponse<>(dias, ate, itens.size(), itens);
         }
     }

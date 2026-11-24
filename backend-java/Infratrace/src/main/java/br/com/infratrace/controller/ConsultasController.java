@@ -1,9 +1,9 @@
 package br.com.infratrace.controller;
 
 import br.com.infratrace.dto.AlertaResponse;
+import br.com.infratrace.dto.GarantiaVencendo;
 import br.com.infratrace.dto.ConfiguracaoRequest;
 import br.com.infratrace.model.Aluguel;
-import br.com.infratrace.model.Ativo;
 import br.com.infratrace.model.Configuracao;
 import br.com.infratrace.model.LogAuditoria;
 import br.com.infratrace.model.Usuario;
@@ -55,7 +55,7 @@ public class ConsultasController {
     }
 
     @GetMapping("/alertas/garantias")
-    public AlertaResponse<Ativo> garantias() throws SQLException {
+    public AlertaResponse<GarantiaVencendo> garantias() throws SQLException {
         return alertaService.garantiasVencendo();
     }
 

@@ -24,7 +24,7 @@ import static br.com.infratrace.service.Validacoes.obrigatorio;
  *  - período válido (fim >= início) e valor >= 0;
  *  - cliente precisa existir e estar ativo;
  *  - o mesmo rack não pode ter dois aluguéis com períodos sobrepostos (RF-07.2).
- *    O trigger tg_aluguel_periodo_* garante isso no banco; aqui a mensagem diz qual aluguel conflita.
+ *    O trigger Trigger_aluguel_periodo_* garante isso no banco; aqui a mensagem diz qual aluguel conflita.
  */
 @Service
 public class AluguelService {

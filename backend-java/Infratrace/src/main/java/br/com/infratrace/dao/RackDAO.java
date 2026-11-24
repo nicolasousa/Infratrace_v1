@@ -1,5 +1,6 @@
 package br.com.infratrace.dao;
 
+import br.com.infratrace.dto.ResumoOcupacaoRack;
 import br.com.infratrace.model.Rack;
 import org.springframework.stereotype.Repository;
 
@@ -27,6 +28,33 @@ public class RackDAO {
                 List<Rack> lista = new ArrayList<>();
                 while (rs.next()) {
                     lista.add(mapear(rs));
+                }
+                return lista;
+            }
+        }
+    }
+
+    /**
+     * Resumo de ocupação de todos os racks, lido da VIEW View_ocupacao_rack. O JOIN com fileira e
+     * sala, o COUNT/SUM dos slots e o percentual ficam na view; aqui é só um SELECT simples.
+     */
+    public List<ResumoOcupacaoRack> listarOcupacao(Connection con, Integer salaId) throws SQLException {
+        String sql = "SELECT rac_id, rac_nome, fil_id, fil_nome, sal_id, sal_nome, rac_total_slots, qtd_ativos, "
+                + "slots_ocupados, slots_livres, percentual_ocupacao FROM View_ocupacao_rack"
+                + (salaId != null ? " WHERE sal_id = ?" : "")
+                + " ORDER BY sal_nome, fil_nome, rac_nome";
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            if (salaId != null) {
+                ps.setInt(1, salaId);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                List<ResumoOcupacaoRack> lista = new ArrayList<>();
+                while (rs.next()) {
+                    lista.add(new ResumoOcupacaoRack(rs.getInt("rac_id"), rs.getString("rac_nome"),
+                            rs.getInt("fil_id"), rs.getString("fil_nome"), rs.getInt("sal_id"),
+                            rs.getString("sal_nome"), rs.getInt("rac_total_slots"), rs.getInt("qtd_ativos"),
+                            rs.getInt("slots_ocupados"), rs.getInt("slots_livres"),
+                            rs.getDouble("percentual_ocupacao")));
                 }
                 return lista;
             }

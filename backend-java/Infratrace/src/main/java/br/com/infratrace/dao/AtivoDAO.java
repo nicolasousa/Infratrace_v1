@@ -1,5 +1,6 @@
 package br.com.infratrace.dao;
 
+import br.com.infratrace.dto.GarantiaVencendo;
 import br.com.infratrace.model.Ativo;
 import org.springframework.stereotype.Repository;
 
@@ -55,13 +56,29 @@ public class AtivoDAO {
         }
     }
 
-    /** Ativos não descartados cuja garantia vence entre as duas datas. */
-    public List<Ativo> listarGarantiaVencendo(Connection con, LocalDate de, LocalDate ate) throws SQLException {
-        String sql = COLUNAS + " WHERE atv_garantia BETWEEN ? AND ? AND atv_status <> 'DESCARTADO' ORDER BY atv_garantia";
+    /**
+     * Ativos cuja garantia vence de hoje até daqui a N dias. Lê da VIEW View_garantia_ativo, que já
+     * faz os JOINs (tipo, rack, fileira, sala), calcula dias_restantes e exclui os descartados.
+     * Para o Java, consultar uma view é igual a consultar uma tabela.
+     */
+    public List<GarantiaVencendo> listarGarantiaVencendo(Connection con, int dias) throws SQLException {
+        String sql = "SELECT atv_id, atv_nome, atv_patrimonio, atv_status, atv_garantia, dias_restantes, tpa_nome, "
+                + "rac_id, rac_nome, fil_nome, sal_nome, atv_slot_inicio, atv_slot_fim "
+                + "FROM View_garantia_ativo WHERE dias_restantes BETWEEN 0 AND ? ORDER BY atv_garantia";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setObject(1, de);
-            ps.setObject(2, ate);
-            return listarResultado(ps);
+            ps.setInt(1, dias);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<GarantiaVencendo> lista = new ArrayList<>();
+                while (rs.next()) {
+                    lista.add(new GarantiaVencendo(rs.getInt("atv_id"), rs.getString("atv_nome"),
+                            rs.getString("atv_patrimonio"), rs.getString("atv_status"),
+                            rs.getObject("atv_garantia", LocalDate.class), rs.getInt("dias_restantes"),
+                            rs.getString("tpa_nome"), rs.getObject("rac_id", Integer.class),
+                            rs.getString("rac_nome"), rs.getString("fil_nome"), rs.getString("sal_nome"),
+                            rs.getObject("atv_slot_inicio", Integer.class), rs.getObject("atv_slot_fim", Integer.class)));
+                }
+                return lista;
+            }
         }
     }
 

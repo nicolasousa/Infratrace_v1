@@ -67,6 +67,7 @@ Todo erro tem o mesmo formato:
 | DELETE | `/fileiras/{id}` | 409 se tiver racks |
 | GET | `/racks?fileiraId=` · `/racks/{id}` | |
 | GET | `/racks/{id}/ocupacao` | Mapa de ocupação (ver abaixo) |
+| GET | `/racks/ocupacao?salaId=` | Resumo de ocupação de todos os racks (lido da view `View_ocupacao_rack`): `rackId`, `rackNome`, `fileiraId`, `fileiraNome`, `salaId`, `salaNome`, `totalSlots`, `qtdAtivos`, `slotsOcupados`, `slotsLivres`, `percentualOcupacao` |
 | POST · PUT | `/racks` · `/racks/{id}` | `nome`*, `totalSlots`* (1 a 60), `fileiraId`* |
 | DELETE | `/racks/{id}` | 409 se tiver ativos, aluguéis ou movimentações |
 
@@ -211,7 +212,7 @@ O mesmo rack não pode ter dois aluguéis com períodos sobrepostos (409).
 |---|---|---|
 | GET | `/configuracoes` · `/configuracoes/{chave}` | |
 | PUT | `/configuracoes/{chave}` | `{ "valor": "60" }`. `alerta_garantia_dias`: 30, 60 ou 90. `alerta_aluguel_dias`: 15, 30 ou 60. |
-| GET | `/alertas/garantias` | Ativos com garantia vencendo dentro do prazo configurado |
+| GET | `/alertas/garantias` | Ativos com garantia vencendo dentro do prazo configurado (lido da view `View_garantia_ativo`). Cada item: `ativoId`, `ativoNome`, `patrimonio`, `status`, `garantia`, `diasRestantes`, `tipo`, `rackId`, `rackNome`, `fileiraNome`, `salaNome`, `slotInicio`, `slotFim` (local `null` = estoque) |
 | GET | `/alertas/alugueis` | Aluguéis terminando dentro do prazo configurado |
 | GET | `/auditoria?entidade=&entidadeId=&usuarioId=&limite=` | Log de alterações. `limite`: padrão 200, máximo 1000. |
 

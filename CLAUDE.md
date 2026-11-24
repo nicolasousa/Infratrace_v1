@@ -51,7 +51,7 @@ Evite abstrações desnecessárias. É um projeto acadêmico de pequeno porte.
 - **Não altere tabelas, colunas ou relacionamentos** sem explicar o motivo e receber aprovação.
   Use sempre os nomes reais do script. Nunca invente nomes de tabelas ou colunas.
 - Convenções: snake_case, prefixo de 3 letras por tabela (`atv_`, `rac_`, `usr_`...), FKs como
-  `fk_<prefixo>_id`. IDs com `AUTO_INCREMENT`; datas e horas em `DATETIME` (mapear para
+  `fk_<prefixo>_id`, views como `View_<nome>` e triggers como `Trigger_<nome>`. IDs com `AUTO_INCREMENT`; datas e horas em `DATETIME` (mapear para
   `LocalDateTime`).
 - Regras garantidas pelo banco por triggers (`SIGNAL SQLSTATE '45000'`, erro 1644 no JDBC):
   - slots sobrepostos no mesmo rack;
@@ -105,6 +105,9 @@ Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
 - Auditoria: toda escrita grava `log_auditoria` na mesma transação (JSON com antes/depois).
 - Racks: `RackService.validarPosicao` trava o rack com `SELECT ... FOR UPDATE` e valida
   capacidade e sobreposição antes dos triggers.
+- Views (2026-11-23): `View_ocupacao_rack` (lida por `RackDAO.listarOcupacao`, rota
+  `GET /racks/ocupacao`) e `View_garantia_ativo` (lida por `AtivoDAO.listarGarantiaVencendo`,
+  rota `GET /alertas/garantias`, que agora devolve o DTO `GarantiaVencendo`).
 - Spring Boot 4.1.2 só com `spring-boot-starter-web`; Jackson 3 (`tools.jackson.*`).
 - `application.properties` não tem `spring.datasource.*`: a `Conexao` lê `System.getenv`.
 - JDK 21 em `~/.jdks/openjdk-21.0.2`; Maven do IntelliJ em
@@ -114,8 +117,10 @@ Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
   transação, a ordem é arquivo → INSERT (e apaga o arquivo se o INSERT falhar) e DELETE → commit
   → apaga o arquivo. Limite de 10 MB (413).
 - Documentação: `docs/API.md`, `docs/InfraTrace.postman_collection.json` (64 requisições;
-  editada por script, o gerador não fica no repositório) e `docs/teste_api.ps1` (82 verificações
-  de ponta a ponta; todas passaram em 2026-11-18; envios de anexo usam `curl.exe`).
+  editada por script, o gerador não fica no repositório) e `docs/teste_api.ps1` (84 verificações
+  de ponta a ponta; as 82 antigas passaram em 2026-11-18; as 2 das views, de 2026-11-23, ainda
+  não foram rodadas; envios de anexo usam `curl.exe`). A coleção do Postman ainda não tem
+  `GET /racks/ocupacao`.
 
 ## Pendente
 

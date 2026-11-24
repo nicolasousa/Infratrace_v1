@@ -295,7 +295,7 @@ DELIMITER $$
 
 -- RF-02.5: slot final dentro da capacidade do rack
 --          e nenhum intervalo de slots sobreposto no mesmo rack
-CREATE TRIGGER tg_ativo_valida_slots_ins
+CREATE TRIGGER Trigger_ativo_valida_slots_ins
 BEFORE INSERT ON ativo
 FOR EACH ROW
 BEGIN
@@ -321,7 +321,7 @@ BEGIN
     END IF;
 END$$
 
-CREATE TRIGGER tg_ativo_valida_slots_upd
+CREATE TRIGGER Trigger_ativo_valida_slots_upd
 BEFORE UPDATE ON ativo
 FOR EACH ROW
 BEGIN
@@ -349,7 +349,7 @@ BEGIN
 END$$
 
 -- Impede reduzir a capacidade de um rack abaixo de um ativo já instalado
-CREATE TRIGGER tg_rack_reducao_capacidade
+CREATE TRIGGER Trigger_rack_reducao_capacidade
 BEFORE UPDATE ON rack
 FOR EACH ROW
 BEGIN
@@ -367,7 +367,7 @@ BEGIN
 END$$
 
 -- Slot de destino da movimentação não pode passar da capacidade do rack
-CREATE TRIGGER tg_movimentacao_capacidade_ins
+CREATE TRIGGER Trigger_movimentacao_capacidade_ins
 BEFORE INSERT ON movimentacao
 FOR EACH ROW
 BEGIN
@@ -384,7 +384,7 @@ BEGIN
     END IF;
 END$$
 
-CREATE TRIGGER tg_movimentacao_capacidade_upd
+CREATE TRIGGER Trigger_movimentacao_capacidade_upd
 BEFORE UPDATE ON movimentacao
 FOR EACH ROW
 BEGIN
@@ -402,7 +402,7 @@ BEGIN
 END$$
 
 -- RF-07.2: o mesmo rack não pode ter aluguéis com períodos sobrepostos
-CREATE TRIGGER tg_aluguel_periodo_ins
+CREATE TRIGGER Trigger_aluguel_periodo_ins
 BEFORE INSERT ON aluguel
 FOR EACH ROW
 BEGIN
@@ -415,7 +415,7 @@ BEGIN
     END IF;
 END$$
 
-CREATE TRIGGER tg_aluguel_periodo_upd
+CREATE TRIGGER Trigger_aluguel_periodo_upd
 BEFORE UPDATE ON aluguel
 FOR EACH ROW
 BEGIN
@@ -430,6 +430,62 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+-- =====================================================================
+-- Views
+-- Uma view é uma consulta SELECT guardada no banco com um nome. Ela não
+-- guarda dados: toda vez que alguém faz SELECT nela, o MySQL executa a
+-- consulta de novo sobre as tabelas, então o resultado está sempre atual.
+-- Servem para esconder JOINs e cálculos repetitivos atrás de um nome simples.
+-- =====================================================================
+
+-- RF-02: resumo de ocupação de todos os racks (painel do data center).
+-- LEFT JOIN com ativo: um rack vazio também aparece (com 0 slots ocupados).
+-- COALESCE troca o NULL do SUM (rack sem ativos) por 0.
+CREATE VIEW View_ocupacao_rack AS
+SELECT r.rac_id,
+       r.rac_nome,
+       f.fil_id,
+       f.fil_nome,
+       s.sal_id,
+       s.sal_nome,
+       r.rac_total_slots,
+       COUNT(a.atv_id)                                              AS qtd_ativos,
+       COALESCE(SUM(a.atv_slot_fim - a.atv_slot_inicio + 1), 0)     AS slots_ocupados,
+       r.rac_total_slots
+           - COALESCE(SUM(a.atv_slot_fim - a.atv_slot_inicio + 1), 0) AS slots_livres,
+       ROUND(COALESCE(SUM(a.atv_slot_fim - a.atv_slot_inicio + 1), 0) * 100
+             / r.rac_total_slots, 1)                                AS percentual_ocupacao
+  FROM rack r
+  JOIN fileira f    ON f.fil_id = r.fk_fil_id
+  JOIN sala s       ON s.sal_id = f.fk_sal_id
+  LEFT JOIN ativo a ON a.fk_rac_id = r.rac_id
+ GROUP BY r.rac_id, r.rac_nome, f.fil_id, f.fil_nome, s.sal_id, s.sal_nome, r.rac_total_slots;
+
+-- RF-03.5: garantia de cada ativo não descartado, com quantos dias faltam e onde ele está.
+-- dias_restantes negativo = garantia já vencida.
+-- LEFT JOIN com rack/fileira/sala: ativo no estoque (sem rack) também aparece, com local NULL.
+CREATE VIEW View_garantia_ativo AS
+SELECT a.atv_id,
+       a.atv_nome,
+       a.atv_patrimonio,
+       a.atv_status,
+       a.atv_garantia,
+       DATEDIFF(a.atv_garantia, CURDATE()) AS dias_restantes,
+       t.tpa_nome,
+       r.rac_id,
+       r.rac_nome,
+       f.fil_nome,
+       s.sal_nome,
+       a.atv_slot_inicio,
+       a.atv_slot_fim
+  FROM ativo a
+  JOIN tipo_ativo t   ON t.tpa_id = a.fk_tpa_id
+  LEFT JOIN rack r    ON r.rac_id = a.fk_rac_id
+  LEFT JOIN fileira f ON f.fil_id = r.fk_fil_id
+  LEFT JOIN sala s    ON s.sal_id = f.fk_sal_id
+ WHERE a.atv_garantia IS NOT NULL
+   AND a.atv_status <> 'DESCARTADO';
 
 -- ---------------------------------------------------------------------
 -- Dados iniciais

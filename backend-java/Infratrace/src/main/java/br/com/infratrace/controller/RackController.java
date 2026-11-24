@@ -1,6 +1,7 @@
 package br.com.infratrace.controller;
 
 import br.com.infratrace.dto.OcupacaoRackResponse;
+import br.com.infratrace.dto.ResumoOcupacaoRack;
 import br.com.infratrace.model.Rack;
 import br.com.infratrace.model.Usuario;
 import br.com.infratrace.config.UsuarioResponsavelInterceptor;
@@ -35,6 +36,15 @@ public class RackController {
     @GetMapping
     public List<Rack> listar(@RequestParam(required = false) Integer fileiraId) throws SQLException {
         return service.listar(fileiraId);
+    }
+
+    /**
+     * Painel: ocupação de todos os racks (filtro opcional ?salaId=1). Lê da view View_ocupacao_rack.
+     * O caminho fixo "/ocupacao" tem prioridade sobre "/{id}", então não há conflito.
+     */
+    @GetMapping("/ocupacao")
+    public List<ResumoOcupacaoRack> ocupacaoGeral(@RequestParam(required = false) Integer salaId) throws SQLException {
+        return service.ocupacaoGeral(salaId);
     }
 
     @GetMapping("/{id}")

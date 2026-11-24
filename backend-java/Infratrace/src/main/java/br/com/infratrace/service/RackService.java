@@ -8,6 +8,7 @@ import br.com.infratrace.dao.RackDAO;
 import br.com.infratrace.dto.OcupacaoRackResponse;
 import br.com.infratrace.dto.OcupacaoRackResponse.IntervaloLivre;
 import br.com.infratrace.dto.OcupacaoRackResponse.SlotOcupado;
+import br.com.infratrace.dto.ResumoOcupacaoRack;
 import br.com.infratrace.exception.ConflitoException;
 import br.com.infratrace.exception.NaoEncontradoException;
 import br.com.infratrace.exception.NegocioException;
@@ -98,6 +99,13 @@ public class RackService {
             auditoria.registrar(con, usuarioId, Auditoria.DELETE, ENTIDADE, id, anterior, null);
             return null;
         });
+    }
+
+    /** Resumo de ocupação de todos os racks (ou só os de uma sala), vindo da view View_ocupacao_rack. */
+    public List<ResumoOcupacaoRack> ocupacaoGeral(Integer salaId) throws SQLException {
+        try (Connection con = Conexao.getConexao()) {
+            return dao.listarOcupacao(con, salaId);
+        }
     }
 
     /**

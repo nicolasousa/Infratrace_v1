@@ -139,6 +139,8 @@ Esperar 'Fim antes do início -> 400' (Chamar POST '/alugueis' @{dataInicio=(& $
 
 Write-Output '--- Configurações e alertas'
 Esperar 'Alerta de garantias (SRV-01 vence em 20 dias)' (Chamar GET '/alertas/garantias') 200 { param($j) $j.quantidade -eq 1 -and $j.diasAntecedencia -eq 30 }
+Esperar 'View_garantia_ativo: diasRestantes = 20 e tipo Servidor' (Chamar GET '/alertas/garantias') 200 { param($j) $j.itens[0].diasRestantes -eq 20 -and $j.itens[0].tipo -eq 'Servidor' }
+Esperar 'View_ocupacao_rack: painel com todos os racks' (Chamar GET '/racks/ocupacao') 200 { param($j) @($j | Where-Object { $_.rackId -eq $r1 -and $_.salaNome }).Count -eq 1 }
 Esperar 'Alerta de aluguéis (R02 vence em 10 dias)' (Chamar GET '/alertas/alugueis') 200 { param($j) $j.quantidade -eq 1 }
 Esperar 'Configuração com valor fora das opções -> 400' (Chamar PUT '/configuracoes/alerta_garantia_dias' @{valor='45'}) 400
 Esperar 'Alterar para 60 dias -> 200' (Chamar PUT '/configuracoes/alerta_garantia_dias' @{valor='60'}) 200 { param($j) $j.valor -eq '60' }
