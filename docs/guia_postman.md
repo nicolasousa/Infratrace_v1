@@ -138,7 +138,7 @@ Confira também: **Ocupação do rack** (pasta 2) agora mostra o SRV-01 nos slot
 | Listar | 200: **3** movimentações. A tentativa com erro não deixou registro. |
 
 Ponto de estudo: cada movimentação faz `INSERT movimentacao` + `UPDATE ativo` + auditoria na
-mesma transação (`MovimentacaoService`). Confira com `GET /ativos/2`: o `rackId` acompanha cada
+mesma transação, feita no MySQL pela `Procedure_movimentar_ativo` (chamada pelo `MovimentacaoService`). Confira com `GET /ativos/2`: o `rackId` acompanha cada
 movimentação.
 
 ### Pasta 7. Manutenções

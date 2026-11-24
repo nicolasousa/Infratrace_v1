@@ -158,7 +158,7 @@ Resposta:
 - Um ativo com anexos não pode ser excluído (FK → 409); use o descarte.
 - Para baixar no Postman, use **Send and Download**, na seta ao lado de *Send*.
 
-### Movimentações (transação manual)
+### Movimentações (transação no MySQL, pela `Procedure_movimentar_ativo`)
 
 | Método | Rota | Descrição |
 |---|---|---|
@@ -171,7 +171,10 @@ Resposta:
 
 - A **origem** não é enviada: o sistema usa a posição atual do ativo.
 - Para mandar ao **estoque**, envie só `ativoId` e `motivo` (destino nulo).
-- Tudo acontece numa única transação: INSERT em `movimentacao` + UPDATE em `ativo` + log. Se algo falhar, nada é gravado.
+- O Service confere as condições (para responder 404/400/409 com mensagem clara) e chama
+  `CALL Procedure_movimentar_ativo(...)`. A procedure faz, numa única transação do MySQL,
+  INSERT em `movimentacao` + UPDATE em `ativo` + log de auditoria. Se algo falhar, ela faz
+  `ROLLBACK` e nada é gravado.
 
 ### Manutenções
 

@@ -19,7 +19,8 @@ import java.sql.SQLException;
  *         return id;
  *     });
  *
- * O MovimentacaoService mostra o mesmo processo escrito "por extenso", sem esta classe.
+ * A movimentação de ativos é a exceção: a transação dela é feita no MySQL, pela procedure
+ * Procedure_movimentar_ativo (ver MovimentacaoService e MovimentacaoDAO.movimentar).
  */
 public final class Transacao {
 

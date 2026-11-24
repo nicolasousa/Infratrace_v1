@@ -1,6 +1,6 @@
 # Roteiro da apresentação — InfraTrace
 
-Objetivo: mostrar ao professor, funcionando, os três conceitos de Banco de Dados do projeto:
+Objetivo: mostrar ao professor, funcionando, os quatro conceitos de Banco de Dados do projeto:
 **views**, **triggers**, **procedures** e **transações**. Tempo estimado: 15 a 20 minutos.
 
 Os passos usam os dados de `database/dados_exemplo.sql`. **Siga a ordem**: alguns passos
@@ -130,30 +130,43 @@ Datas no formato `AAAA-MM-DD`.
 **série de condições for verdadeira**. Ela junta vários passos, e **ou todos são gravados, ou
 nenhum é** (atomicidade).
 
-No JDBC:
-```java
-con.setAutoCommit(false);  // nada é gravado de vez a partir daqui
-// confere as condições; se alguma for falsa -> exceção
-// faz os INSERT/UPDATE
-con.commit();              // todas verdadeiras: grava tudo
-// se qualquer passo falhar:
-con.rollback();            // desfaz tudo
+A transação da movimentação é feita **pelo MySQL**, na `Procedure_movimentar_ativo`
+(mostrar no script, procurando por `CREATE PROCEDURE`):
+```sql
+DECLARE EXIT HANDLER FOR SQLEXCEPTION   -- se QUALQUER comando falhar:
+BEGIN
+    ROLLBACK;                           -- desfaz tudo
+    RESIGNAL;                           -- e devolve o erro para quem chamou
+END;
+
+START TRANSACTION;                      -- nada é gravado de vez a partir daqui
+-- confere as condições; se alguma for falsa -> SIGNAL (erro)
+-- INSERT movimentacao, UPDATE ativo, INSERT log_auditoria
+COMMIT;                                 -- todas verdadeiras: grava tudo
 ```
 
-Mostrar `config/Transacao.java` (o padrão de todas as escritas) e
-`service/MovimentacaoService.java`, que está escrito por extenso. Condições da movimentação:
+A API só chama a procedure: `MovimentacaoDAO.movimentar` faz
+`CALL Procedure_movimentar_ativo(?, ?, ?, ?, ?, ?, ?)` com `CallableStatement` (JDBC). Antes,
+o `MovimentacaoService` confere as condições lendo o banco, para responder com mensagem clara.
+
+Condições da movimentação:
 
 1. o ativo existe (e fica travado com `SELECT ... FOR UPDATE`);
 2. não está descartado;
 3. não está sendo mandado para o estoque se já estiver lá;
 4. o destino é diferente da posição atual;
-5. o rack de destino existe e o slot final cabe na capacidade;
+5. o rack de destino existe (e fica travado) e o slot final cabe na capacidade;
 6. nenhum outro ativo ocupa esses slots;
 7. o `INSERT INTO movimentacao` passa nos CHECKs e no trigger;
 8. o `UPDATE ativo` passa no trigger;
 9. a auditoria é gravada.
 
-Só com as 9 verdadeiras acontece o `commit()`.
+Só com as 9 verdadeiras acontece o `COMMIT`. As condições 1, 2, 5, 6, 7 e 8 são conferidas
+pelo próprio banco (procedure e triggers); o Java confere de novo 1 a 6 só para dar mensagens
+melhores.
+
+As outras escritas do sistema (cadastros, aluguel, manutenção) usam transação JDBC
+(`config/Transacao.java`: `setAutoCommit(false)`, `commit()`, `rollback()`).
 
 ### 4.1 Condições falsas → nada é gravado (Postman, `POST /movimentacoes`)
 
@@ -184,7 +197,7 @@ Conferir que os dois passos foram gravados juntos:
 
 ### 4.3 Rollback na prática (Workbench) — o momento principal
 
-Aqui o grupo faz "à mão" o que o Java faz. O INSERT dá certo, o UPDATE falha, e o ROLLBACK desfaz
+Aqui o grupo faz "à mão", passo a passo, o que a procedure faz. O INSERT dá certo, o UPDATE falha, e o ROLLBACK desfaz
 o INSERT. Rode **um comando por vez** (Ctrl+Enter):
 
 ```sql
@@ -209,8 +222,8 @@ SELECT COUNT(*) FROM movimentacao;   -- 3 de novo: o INSERT do passo 1 sumiu
 ```
 
 Ponto para falar: **sem a transação**, o banco ficaria com uma movimentação registrada de um
-ativo que nunca saiu do lugar. É exatamente o que o `catch { con.rollback(); }` do
-`MovimentacaoService` evita.
+ativo que nunca saiu do lugar. É exatamente o que o `EXIT HANDLER ... ROLLBACK` da
+`Procedure_movimentar_ativo` evita (parte 5.2).
 
 ### 4.4 (Opcional) Concorrência com `SELECT ... FOR UPDATE`
 
@@ -224,13 +237,60 @@ conexão compartilham a sessão e não servem).
 | 3 | `COMMIT;` | a consulta termina na hora |
 | 4 | | `COMMIT;` |
 
-É o que o `RackDAO.buscarPorIdParaAtualizar` faz: duas pessoas não ocupam o mesmo slot ao mesmo
+É o que o `SELECT ... FROM rack ... FOR UPDATE` da `Procedure_movimentar_ativo` faz: duas pessoas não ocupam o mesmo slot ao mesmo
 tempo, porque a segunda espera a primeira terminar e já vê o slot ocupado. Se esperar mais de
 50 segundos, o MySQL desiste com erro 1205 (lock wait timeout).
 
 ---
 
-## 5. Auditoria (1 min)
+## 5. Procedures (3 min)
+
+**Explicação:** uma procedure é um bloco de SQL guardado no banco com um nome e executado com
+`CALL`. Recebe parâmetros e, diferente da view, pode ter várias instruções, variáveis, `IF` e
+controle de transação. Mostrar no script os 2 `CREATE PROCEDURE Procedure_...`.
+
+### 5.1 Procedure simples (Workbench)
+
+```sql
+CALL Procedure_ativos_do_rack(1);   -- SRV-01 (1-2), SRV-02 (3-4), SW-01 (42)
+```
+
+### 5.2 A transação da movimentação: `Procedure_movimentar_ativo`
+
+É a procedure que a API chama no `POST /movimentacoes` (parte 4). Aqui ela é chamada direto
+no Workbench, sem o Java.
+
+Parâmetros: `(ativo, rack destino, slot início, slot fim, motivo, usuário, @id)`. O último é de
+saída (`OUT`): depois do `CALL`, `SELECT @id;` mostra o id da movimentação criada.
+Rode um comando por vez:
+
+```sql
+SELECT COUNT(*) FROM movimentacao;   -- 3 (depois do passo 4.2)
+
+-- Condição falsa: o ativo 99 não existe -> erro 1644 'Ativo não encontrado'
+CALL Procedure_movimentar_ativo(99, 4, 5, 5, 'Teste', 1, @id);
+
+-- O INSERT dá certo, o UPDATE é barrado pelo trigger (slot 1 é do SRV-01) -> erro 1644
+CALL Procedure_movimentar_ativo(3, 1, 1, 1, 'Teste de rollback', 1, @id);
+
+SELECT COUNT(*) FROM movimentacao;   -- continua 3: o handler desfez o INSERT
+
+-- Todas as condições verdadeiras -> COMMIT
+CALL Procedure_movimentar_ativo(7, 4, 10, 11, 'Reorganização do rack', 1, @id);
+SELECT @id;                          -- id da nova movimentação
+
+SELECT COUNT(*) FROM movimentacao;   -- 4
+CALL Procedure_ativos_do_rack(4);    -- SRV-03 agora nos slots 10-11
+SELECT log_acao, log_entidade, log_valor_anterior, log_valor_novo
+  FROM log_auditoria ORDER BY log_id DESC LIMIT 2;   -- a auditoria gravada pela procedure
+```
+
+Ponto para falar: é o 4.3 de novo, mas agora o `ROLLBACK` é **automático**, feito pelo próprio
+banco. A auditoria entra na mesma transação: no `CALL` que falhou, nenhum log ficou gravado.
+
+---
+
+## 6. Auditoria (1 min)
 
 `GET /auditoria` → tudo o que foi alterado pela API durante a apresentação (configuração, aluguel,
 movimentação), com quem fez, quando e os valores antes/depois em JSON.
@@ -246,6 +306,16 @@ Os dados de `dados_exemplo.sql` não aparecem aqui porque foram inseridos direto
 **Por que validar no Service se o trigger já valida?**
 O trigger garante a regra para qualquer um que grave no banco. O Service devolve uma mensagem
 melhor ("o slot 1 está ocupado pelo SRV-01") e evita ir ao banco à toa. São duas camadas.
+
+**Se a procedure faz a transação, por que o Java também confere as condições?**
+Para responder com o código HTTP e a mensagem certos (404 "ativo não encontrado", 409 "slot
+ocupado pelo SRV-01"). Quem garante a regra é o banco: mesmo que alguém pule o Java, a
+procedure e os triggers barram.
+
+**Por que o Java não usa `setAutoCommit(false)` antes do `CALL`?**
+Porque quem abre e fecha a transação é a procedure (`START TRANSACTION` / `COMMIT`). Um
+`START TRANSACTION` dentro de uma transação já aberta faz o MySQL confirmar (commit implícito)
+o que estava pendente, então as duas não podem ser misturadas.
 
 **Por que não usar `@Transactional` ou JPA?**
 Requisito do trabalho: JDBC puro, para controlar a transação à mão (`setAutoCommit(false)`,
