@@ -124,6 +124,8 @@ Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
 - Apresentação: `database/dados_exemplo.sql` (rodar logo após o script principal; IDs fixos e
   datas relativas a `CURDATE()`) e `docs/roteiro_apresentacao.md` (views, triggers, transação
   e rollback no Workbench, na ordem; depende dos IDs e contagens do `dados_exemplo.sql`).
+- `docs/guia_postman.md`: teste da API do zero pela coleção do Postman (banco vazio, sem
+  `dados_exemplo.sql`), pasta por pasta, com o status esperado; exclusões ficam para o fim.
 
 ## Pendente
 

@@ -49,8 +49,8 @@ INSERT INTO rack (rac_id, rac_nome, rac_total_slots, fk_fil_id) VALUES
 -- Notas fiscais de compra (dados fictícios)
 -- ---------------------------------------------------------------------
 INSERT INTO nota_fiscal (nff_id, nff_num, nff_valor, nff_volumes, nff_razao_social, nff_cnpj, nff_descricao) VALUES
-(1, 1001, 75000.00, 3, 'Fornecedor Exemplo de Servidores Ltda', '12345678000190', 'Servidores'),
-(2, 2002, 98000.00, 4, 'Distribuidora Exemplo de Redes Ltda',   '98765432000110', 'Rede e storage');
+(1, 1001, 75000.00, 3, 'Fornecedor Exemplo de Servidores Ltda', '12345678000195', 'Servidores'),
+(2, 2002, 98000.00, 4, 'Distribuidora Exemplo de Redes Ltda',   '98765432000198', 'Rede e storage');
 
 -- ---------------------------------------------------------------------
 -- Ativos
@@ -124,8 +124,8 @@ INSERT INTO movimentacao (mov_id, mov_data, mov_motivo,
 -- ---------------------------------------------------------------------
 INSERT INTO cliente (cli_id, cli_nome, cli_cnpj, cli_representante, cli_ativo, fk_tpc_id) VALUES
 (1, 'Alfa Tecnologia Ltda',     '11222333000181', 'Mariana Souza', TRUE,  1),
-(2, 'Beta Provedor de Internet', '44555666000199', 'Roberto Lima',  TRUE,  2),
-(3, 'Órgão Público Exemplo',     '77888999000100', 'Paulo Mendes',  FALSE, 3);   -- inativo
+(2, 'Beta Provedor de Internet', '44555666000181', 'Roberto Lima',  TRUE,  2),
+(3, 'Órgão Público Exemplo',     '77888999000181', 'Paulo Mendes',  FALSE, 3);   -- inativo
 
 INSERT INTO aluguel (alu_id, alu_data_inicio, alu_data_fim, alu_valor, fk_cli_id, fk_rac_id) VALUES
 (1, DATE_SUB(CURDATE(), INTERVAL 180 DAY), DATE_ADD(CURDATE(), INTERVAL 10 DAY),  3000.00, 1, 3),  -- vence em 10 dias (alerta)

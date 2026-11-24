@@ -965,7 +965,7 @@
                                                               },
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{ \"nome\": \"SRV-03\", \"fabricante\": \"HP\", \"modelo\": \"DL380\", \"numSerie\": \"SN004\", \"tipoAtivoId\": 1, \"rackId\": {{rackId}}, \"slotInicio\": 41, \"slotFim\": 43 }",
+                                                                   "raw":  "{ \"nome\": \"SRV-03\", \"fabricante\": \"HP\", \"modelo\": \"DL380\", \"numSerie\": \"SN004\", \"tipoAtivoId\": 1, \"rackId\": {{rackId}}, \"slotInicio\": 43, \"slotFim\": 45 }",
                                                                    "options":  {
                                                                                    "raw":  {
                                                                                                "language":  "json"
