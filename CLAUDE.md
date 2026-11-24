@@ -118,8 +118,8 @@ Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
   → apaga o arquivo. Limite de 10 MB (413).
 - Documentação: `docs/API.md`, `docs/InfraTrace.postman_collection.json` (64 requisições;
   editada por script, o gerador não fica no repositório) e `docs/teste_api.ps1` (84 verificações
-  de ponta a ponta; as 82 antigas passaram em 2026-11-18; as 2 das views, de 2026-11-23, ainda
-  não foram rodadas; envios de anexo usam `curl.exe`). A coleção do Postman ainda não tem
+  de ponta a ponta; todas passaram em 2026-11-23, incluindo as 2 das views; envios de
+  anexo usam `curl.exe`). A coleção do Postman ainda não tem
   `GET /racks/ocupacao`.
 
 ## Pendente
@@ -130,4 +130,4 @@ Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
 3. Listagens sem paginação.
 4. Conferir com o enunciado do professor se há requisitos (RF) não cobertos.
 5. Antes de dizer o que está ou não no GitHub, confira com `git fetch` + `git status -sb`
-   (em 2026-11-18 tudo foi enviado até o commit `91a81ed`).
+   (em 2026-11-23 tudo foi enviado até o commit das views e da padronização de nomes).
