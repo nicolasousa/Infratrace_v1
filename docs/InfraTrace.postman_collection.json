@@ -554,6 +554,34 @@
                                                   }
                                   },
                                   {
+                                      "name":  "Painel de ocupação de todos os racks (view)",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "description":  "Lê da view View_ocupacao_rack: sala, fileira, quantidade de ativos, slots ocupados e livres e percentual de cada rack. Ative o parâmetro salaId para ver só os racks de uma sala.",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/racks/ocupacao",
+                                                                  "host":  [
+                                                                               "{{baseUrl}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "racks",
+                                                                               "ocupacao"
+                                                                           ],
+                                                                  "query":  [
+                                                                                {
+                                                                                    "key":  "salaId",
+                                                                                    "value":  "{{salaId}}",
+                                                                                    "disabled":  true,
+                                                                                    "description":  "Opcional: mostra só os racks desta sala."
+                                                                                }
+                                                                            ]
+                                                              }
+                                                  }
+                                  },
+                                  {
                                       "name":  "Excluir rack",
                                       "request":  {
                                                       "method":  "DELETE",
@@ -937,7 +965,7 @@
                                                               },
                                                       "body":  {
                                                                    "mode":  "raw",
-                                                                   "raw":  "{ \"nome\": \"SRV-03\", \"fabricante\": \"HP\", \"modelo\": \"DL380\", \"numSerie\": \"SN004\", \"tipoAtivoId\": 1, \"rackId\": {{rackId}}, \"slotInicio\": 41, \"slotFim\": 43 }",
+                                                                   "raw":  "{ \"nome\": \"SRV-03\", \"fabricante\": \"HP\", \"modelo\": \"DL380\", \"numSerie\": \"SN004\", \"tipoAtivoId\": 1, \"rackId\": {{rackId}}, \"slotInicio\": 43, \"slotFim\": 45 }",
                                                                    "options":  {
                                                                                    "raw":  {
                                                                                                "language":  "json"
