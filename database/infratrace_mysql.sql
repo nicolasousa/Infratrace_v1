@@ -283,104 +283,126 @@ CREATE INDEX ix_man_atv      ON manutencao (fk_atv_id, man_data_inicio);
 CREATE INDEX ix_mov_atv      ON movimentacao (fk_atv_id, mov_data);
 CREATE INDEX ix_alu_data_fim ON aluguel (alu_data_fim);
 CREATE INDEX ix_log_entidade ON log_auditoria (log_entidade, log_entidade_id);
-
 -- =====================================================================
--- Triggers de integridade
--- No PostgreSQL estas regras usavam EXCLUDE USING gist e funções plpgsql,
--- que não existem no MySQL. Aqui elas viram triggers BEFORE INSERT/UPDATE
--- que interrompem a operação com SIGNAL SQLSTATE '45000' (erro definido
--- pelo usuário), da mesma forma que o RAISE EXCEPTION do PostgreSQL.
+-- Triggers
+-- Um trigger é executado automaticamente pelo banco ANTES (BEFORE) de um
+-- INSERT ou UPDATE. Se a regra for violada, o SIGNAL SQLSTATE '45000'
+-- cancela a operação e devolve a mensagem (no Java chega como erro 1644).
+-- No MySQL cada trigger atende um só evento, por isso há um para INSERT
+-- e outro para UPDATE.
 -- =====================================================================
 DELIMITER $$
 
--- RF-02.5: slot final dentro da capacidade do rack
---          e nenhum intervalo de slots sobreposto no mesmo rack
+-- RF-02.5: ocupação de slots do ativo no rack
+-- Regra 1: o slot final não pode passar da capacidade do rack.
+-- Regra 2: os slots não podem estar ocupados por outro ativo do mesmo rack.
+--   Dois intervalos se sobrepõem quando um começa antes do outro terminar:
+--   (inicio_existente <= fim_novo) E (fim_existente >= inicio_novo)
+--   Ex.: ativo nos slots 3-5 e novo nos slots 5-6 -> 3 <= 6 e 5 >= 5 -> conflito.
 CREATE TRIGGER Trigger_ativo_valida_slots_ins
 BEFORE INSERT ON ativo
 FOR EACH ROW
 BEGIN
-    DECLARE v_total INT;
-    DECLARE v_msg   VARCHAR(255);
+    DECLARE v_capacidade INT;
+    DECLARE v_conflitos  INT;
 
+    -- Só valida se o ativo for instalado em um rack
     IF NEW.fk_rac_id IS NOT NULL THEN
-        SELECT rac_total_slots INTO v_total FROM rack WHERE rac_id = NEW.fk_rac_id;
-        IF NEW.atv_slot_fim > v_total THEN
-            SET v_msg = CONCAT('Slot final (', NEW.atv_slot_fim,
-                               ') excede a capacidade do rack (', v_total, ' U)');
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_msg;
+
+        SELECT rac_total_slots INTO v_capacidade
+          FROM rack
+         WHERE rac_id = NEW.fk_rac_id;
+
+        IF NEW.atv_slot_fim > v_capacidade THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Slot final maior que a capacidade do rack';
         END IF;
 
-        IF EXISTS (SELECT 1 FROM ativo
-                    WHERE fk_rac_id = NEW.fk_rac_id
-                      AND atv_slot_inicio <= NEW.atv_slot_fim
-                      AND atv_slot_fim    >= NEW.atv_slot_inicio) THEN
-            SET v_msg = CONCAT('Slots ', NEW.atv_slot_inicio, '-', NEW.atv_slot_fim,
-                               ' já estão ocupados no rack ', NEW.fk_rac_id);
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_msg;
+        SELECT COUNT(*) INTO v_conflitos
+          FROM ativo
+         WHERE fk_rac_id = NEW.fk_rac_id
+           AND atv_slot_inicio <= NEW.atv_slot_fim
+           AND atv_slot_fim    >= NEW.atv_slot_inicio;
+
+        IF v_conflitos > 0 THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Slots já ocupados por outro ativo neste rack';
         END IF;
+
     END IF;
 END$$
 
+-- Mesmo trigger para UPDATE; a única diferença é ignorar o próprio ativo
+-- (senão ele "conflitaria" com a posição que ele mesmo já ocupa).
 CREATE TRIGGER Trigger_ativo_valida_slots_upd
 BEFORE UPDATE ON ativo
 FOR EACH ROW
 BEGIN
-    DECLARE v_total INT;
-    DECLARE v_msg   VARCHAR(255);
+    DECLARE v_capacidade INT;
+    DECLARE v_conflitos  INT;
 
     IF NEW.fk_rac_id IS NOT NULL THEN
-        SELECT rac_total_slots INTO v_total FROM rack WHERE rac_id = NEW.fk_rac_id;
-        IF NEW.atv_slot_fim > v_total THEN
-            SET v_msg = CONCAT('Slot final (', NEW.atv_slot_fim,
-                               ') excede a capacidade do rack (', v_total, ' U)');
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_msg;
+
+        SELECT rac_total_slots INTO v_capacidade
+          FROM rack
+         WHERE rac_id = NEW.fk_rac_id;
+
+        IF NEW.atv_slot_fim > v_capacidade THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Slot final maior que a capacidade do rack';
         END IF;
 
-        IF EXISTS (SELECT 1 FROM ativo
-                    WHERE fk_rac_id = NEW.fk_rac_id
-                      AND atv_id   <> NEW.atv_id           -- ignora o próprio ativo
-                      AND atv_slot_inicio <= NEW.atv_slot_fim
-                      AND atv_slot_fim    >= NEW.atv_slot_inicio) THEN
-            SET v_msg = CONCAT('Slots ', NEW.atv_slot_inicio, '-', NEW.atv_slot_fim,
-                               ' já estão ocupados no rack ', NEW.fk_rac_id);
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_msg;
+        SELECT COUNT(*) INTO v_conflitos
+          FROM ativo
+         WHERE fk_rac_id = NEW.fk_rac_id
+           AND atv_id <> NEW.atv_id
+           AND atv_slot_inicio <= NEW.atv_slot_fim
+           AND atv_slot_fim    >= NEW.atv_slot_inicio;
+
+        IF v_conflitos > 0 THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Slots já ocupados por outro ativo neste rack';
         END IF;
+
     END IF;
 END$$
 
--- Impede reduzir a capacidade de um rack abaixo de um ativo já instalado
+-- A capacidade do rack não pode ficar menor que o maior slot ocupado nele
 CREATE TRIGGER Trigger_rack_reducao_capacidade
 BEFORE UPDATE ON rack
 FOR EACH ROW
 BEGIN
     DECLARE v_maior_slot INT;
-    DECLARE v_msg        VARCHAR(255);
 
-    IF NEW.rac_total_slots < OLD.rac_total_slots THEN
-        SELECT MAX(atv_slot_fim) INTO v_maior_slot FROM ativo WHERE fk_rac_id = NEW.rac_id;
-        IF v_maior_slot > NEW.rac_total_slots THEN
-            SET v_msg = CONCAT('Rack possui ativo ocupando até o slot ', v_maior_slot,
-                               '; capacidade não pode ser ', NEW.rac_total_slots, ' U');
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_msg;
-        END IF;
+    SELECT MAX(atv_slot_fim) INTO v_maior_slot
+      FROM ativo
+     WHERE fk_rac_id = NEW.rac_id;
+
+    -- Rack vazio: MAX devolve NULL e a comparação não dispara o erro
+    IF v_maior_slot > NEW.rac_total_slots THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Capacidade menor que o maior slot ocupado no rack';
     END IF;
 END$$
 
--- Slot de destino da movimentação não pode passar da capacidade do rack
+-- Movimentação: o slot final de destino não pode passar da capacidade do rack
 CREATE TRIGGER Trigger_movimentacao_capacidade_ins
 BEFORE INSERT ON movimentacao
 FOR EACH ROW
 BEGIN
-    DECLARE v_total INT;
-    DECLARE v_msg   VARCHAR(255);
+    DECLARE v_capacidade INT;
 
     IF NEW.fk_rac_destino_id IS NOT NULL THEN
-        SELECT rac_total_slots INTO v_total FROM rack WHERE rac_id = NEW.fk_rac_destino_id;
-        IF NEW.mov_slot_fim_destino > v_total THEN
-            SET v_msg = CONCAT('Slot final de destino (', NEW.mov_slot_fim_destino,
-                               ') excede a capacidade do rack (', v_total, ' U)');
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_msg;
+
+        SELECT rac_total_slots INTO v_capacidade
+          FROM rack
+         WHERE rac_id = NEW.fk_rac_destino_id;
+
+        IF NEW.mov_slot_fim_destino > v_capacidade THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Slot final de destino maior que a capacidade do rack';
         END IF;
+
     END IF;
 END$$
 
@@ -388,30 +410,39 @@ CREATE TRIGGER Trigger_movimentacao_capacidade_upd
 BEFORE UPDATE ON movimentacao
 FOR EACH ROW
 BEGIN
-    DECLARE v_total INT;
-    DECLARE v_msg   VARCHAR(255);
+    DECLARE v_capacidade INT;
 
     IF NEW.fk_rac_destino_id IS NOT NULL THEN
-        SELECT rac_total_slots INTO v_total FROM rack WHERE rac_id = NEW.fk_rac_destino_id;
-        IF NEW.mov_slot_fim_destino > v_total THEN
-            SET v_msg = CONCAT('Slot final de destino (', NEW.mov_slot_fim_destino,
-                               ') excede a capacidade do rack (', v_total, ' U)');
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_msg;
+
+        SELECT rac_total_slots INTO v_capacidade
+          FROM rack
+         WHERE rac_id = NEW.fk_rac_destino_id;
+
+        IF NEW.mov_slot_fim_destino > v_capacidade THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Slot final de destino maior que a capacidade do rack';
         END IF;
+
     END IF;
 END$$
 
 -- RF-07.2: o mesmo rack não pode ter aluguéis com períodos sobrepostos
+-- (mesma ideia de sobreposição dos slots, só que com datas)
 CREATE TRIGGER Trigger_aluguel_periodo_ins
 BEFORE INSERT ON aluguel
 FOR EACH ROW
 BEGIN
-    IF EXISTS (SELECT 1 FROM aluguel
-                WHERE fk_rac_id = NEW.fk_rac_id
-                  AND alu_data_inicio <= NEW.alu_data_fim
-                  AND alu_data_fim    >= NEW.alu_data_inicio) THEN
+    DECLARE v_conflitos INT;
+
+    SELECT COUNT(*) INTO v_conflitos
+      FROM aluguel
+     WHERE fk_rac_id = NEW.fk_rac_id
+       AND alu_data_inicio <= NEW.alu_data_fim
+       AND alu_data_fim    >= NEW.alu_data_inicio;
+
+    IF v_conflitos > 0 THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Já existe aluguel deste rack em um período sobreposto';
+            SET MESSAGE_TEXT = 'Já existe aluguel deste rack nesse período';
     END IF;
 END$$
 
@@ -419,13 +450,18 @@ CREATE TRIGGER Trigger_aluguel_periodo_upd
 BEFORE UPDATE ON aluguel
 FOR EACH ROW
 BEGIN
-    IF EXISTS (SELECT 1 FROM aluguel
-                WHERE fk_rac_id = NEW.fk_rac_id
-                  AND alu_id   <> NEW.alu_id            -- ignora o próprio aluguel
-                  AND alu_data_inicio <= NEW.alu_data_fim
-                  AND alu_data_fim    >= NEW.alu_data_inicio) THEN
+    DECLARE v_conflitos INT;
+
+    SELECT COUNT(*) INTO v_conflitos
+      FROM aluguel
+     WHERE fk_rac_id = NEW.fk_rac_id
+       AND alu_id <> NEW.alu_id
+       AND alu_data_inicio <= NEW.alu_data_fim
+       AND alu_data_fim    >= NEW.alu_data_inicio;
+
+    IF v_conflitos > 0 THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Já existe aluguel deste rack em um período sobreposto';
+            SET MESSAGE_TEXT = 'Já existe aluguel deste rack nesse período';
     END IF;
 END$$
 
