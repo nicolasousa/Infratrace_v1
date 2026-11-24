@@ -116,11 +116,11 @@ Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
   fora do Git), salvos com nome UUID; `anx_caminho` guarda esse nome. Como o disco não entra na
   transação, a ordem é arquivo → INSERT (e apaga o arquivo se o INSERT falhar) e DELETE → commit
   → apaga o arquivo. Limite de 10 MB (413).
-- Documentação: `docs/API.md`, `docs/InfraTrace.postman_collection.json` (64 requisições;
+- Documentação: `docs/API.md`, `docs/InfraTrace.postman_collection.json` (65 requisições;
   editada por script, o gerador não fica no repositório) e `docs/teste_api.ps1` (84 verificações
   de ponta a ponta; todas passaram em 2026-11-23, incluindo as 2 das views; envios de
-  anexo usam `curl.exe`). A coleção do Postman ainda não tem
-  `GET /racks/ocupacao`.
+  anexo usam `curl.exe`). A coleção do Postman inclui
+  `GET /racks/ocupacao` (pasta 2. Infraestrutura).
 - Apresentação: `database/dados_exemplo.sql` (rodar logo após o script principal; IDs fixos e
   datas relativas a `CURDATE()`) e `docs/roteiro_apresentacao.md` (views, triggers, transação
   e rollback no Workbench, na ordem; depende dos IDs e contagens do `dados_exemplo.sql`).
