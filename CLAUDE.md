@@ -121,6 +121,9 @@ Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
   de ponta a ponta; todas passaram em 2026-11-23, incluindo as 2 das views; envios de
   anexo usam `curl.exe`). A coleção do Postman ainda não tem
   `GET /racks/ocupacao`.
+- Apresentação: `database/dados_exemplo.sql` (rodar logo após o script principal; IDs fixos e
+  datas relativas a `CURDATE()`) e `docs/roteiro_apresentacao.md` (views, triggers, transação
+  e rollback no Workbench, na ordem; depende dos IDs e contagens do `dados_exemplo.sql`).
 
 ## Pendente
 
