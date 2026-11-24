@@ -1,7 +1,7 @@
 # Roteiro da apresentação — InfraTrace
 
 Objetivo: mostrar ao professor, funcionando, os três conceitos de Banco de Dados do projeto:
-**views**, **triggers** e **transações**. Tempo estimado: 15 a 20 minutos.
+**views**, **triggers**, **procedures** e **transações**. Tempo estimado: 15 a 20 minutos.
 
 Os passos usam os dados de `database/dados_exemplo.sql`. **Siga a ordem**: alguns passos
 dependem do anterior (por exemplo, a contagem de movimentações na parte 4).
