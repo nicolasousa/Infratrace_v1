@@ -20,21 +20,20 @@ import static br.com.infratrace.service.Validacoes.obrigatorio;
 import static br.com.infratrace.service.Validacoes.textoOpcional;
 
 /**
- * Movimentação física de ativos: a principal TRANSAÇÃO MANUAL do projeto.
+ * Movimentação física de ativos. A TRANSAÇÃO é feita pelo MySQL, na procedure
+ * Procedure_movimentar_ativo (database/infratrace_mysql.sql).
  *
- * A tabela movimentacao não altera o ativo sozinha. Por isso, na MESMA transação:
- *   1. trava o ativo (SELECT ... FOR UPDATE) e lê a posição atual (= origem);
- *   2. valida o destino (capacidade e slots livres, travando também o rack de destino);
- *   3. INSERT INTO movimentacao;
- *   4. UPDATE ativo SET fk_rac_id, atv_slot_inicio, atv_slot_fim;
- *   5. INSERT INTO log_auditoria;
- *   6. commit() — ou rollback() se QUALQUER passo falhar.
+ * Divisão de trabalho:
+ *   - Java (este Service): confere as condições lendo o banco, para devolver mensagens claras
+ *     e o código HTTP certo (404, 400, 409). Não abre transação.
+ *   - MySQL (procedure): START TRANSACTION → trava ativo e rack (FOR UPDATE) → INSERT
+ *     movimentacao → UPDATE ativo → INSERT log_auditoria → COMMIT, ou ROLLBACK se QUALQUER
+ *     passo falhar (EXIT HANDLER). Os triggers conferem capacidade e slots de novo.
  *
- * Sem a transação, uma falha no passo 4 deixaria uma movimentação registrada para um ativo que
+ * Sem a transação, uma falha no UPDATE deixaria uma movimentação registrada para um ativo que
  * não saiu do lugar. Com ela, ou tudo acontece, ou nada acontece (atomicidade).
  *
- * Este Service está escrito "por extenso" (sem a classe Transacao) de propósito, para mostrar
- * cada chamada JDBC.
+ * As demais escritas do sistema continuam com a transação no Java (ver config/Transacao).
  */
 @Service
 public class MovimentacaoService {
@@ -42,13 +41,11 @@ public class MovimentacaoService {
     private final MovimentacaoDAO dao;
     private final AtivoDAO ativoDAO;
     private final RackService rackService;
-    private final Auditoria auditoria;
 
-    public MovimentacaoService(MovimentacaoDAO dao, AtivoDAO ativoDAO, RackService rackService, Auditoria auditoria) {
+    public MovimentacaoService(MovimentacaoDAO dao, AtivoDAO ativoDAO, RackService rackService) {
         this.dao = dao;
         this.ativoDAO = ativoDAO;
         this.rackService = rackService;
-        this.auditoria = auditoria;
     }
 
     public List<Movimentacao> listar(Integer ativoId) throws SQLException {
@@ -76,62 +73,35 @@ public class MovimentacaoService {
         }
 
         try (Connection con = Conexao.getConexao()) {
-            con.setAutoCommit(false);                     // início da transação
-            try {
-                // 1. Trava o ativo: outra movimentação do mesmo ativo espera esta terminar.
-                Ativo ativo = ativoDAO.buscarPorIdParaAtualizar(con, ativoId);
-                if (ativo == null) {
-                    throw new NaoEncontradoException("Ativo " + ativoId + " não encontrado");
-                }
-                if (AtivoService.DESCARTADO.equals(ativo.getStatus())) {
-                    throw new ConflitoException("Ativo descartado não pode ser movimentado");
-                }
-                if (paraEstoque && ativo.getRackId() == null) {
-                    throw new ConflitoException("O ativo já está no estoque");
-                }
-                if (!paraEstoque
-                        && Objects.equals(ativo.getRackId(), pedido.rackDestinoId())
-                        && Objects.equals(ativo.getSlotInicio(), pedido.slotInicioDestino())
-                        && Objects.equals(ativo.getSlotFim(), pedido.slotFimDestino())) {
-                    throw new ConflitoException("O ativo já está nessa posição");
-                }
-
-                // 2. Destino válido? (ignora o próprio ativo: ele pode "deslizar" no mesmo rack)
-                if (!paraEstoque) {
-                    rackService.validarPosicao(con, pedido.rackDestinoId(), pedido.slotInicioDestino(),
-                            pedido.slotFimDestino(), ativoId);
-                }
-
-                // 3. Registra a movimentação. A origem vem do banco, não do cliente.
-                Movimentacao mov = new Movimentacao();
-                mov.setMotivo(motivo);
-                mov.setRackOrigemId(ativo.getRackId());
-                mov.setSlotInicioOrigem(ativo.getSlotInicio());
-                mov.setSlotFimOrigem(ativo.getSlotFim());
-                mov.setRackDestinoId(pedido.rackDestinoId());
-                mov.setSlotInicioDestino(pedido.slotInicioDestino());
-                mov.setSlotFimDestino(pedido.slotFimDestino());
-                mov.setAtivoId(ativoId);
-                mov.setUsuarioId(usuarioId);
-                int movId = dao.inserir(con, mov);
-
-                // 4. Atualiza a posição do ativo.
-                ativoDAO.atualizarLocalizacao(con, ativoId, pedido.rackDestinoId(),
-                        pedido.slotInicioDestino(), pedido.slotFimDestino());
-
-                // 5. Auditoria (mesma conexão = mesma transação).
-                Ativo depois = ativoDAO.buscarPorId(con, ativoId);
-                Movimentacao salva = dao.buscarPorId(con, movId);
-                auditoria.registrar(con, usuarioId, Auditoria.INSERT, "movimentacao", movId, null, salva);
-                auditoria.registrar(con, usuarioId, Auditoria.UPDATE, "ativo", ativoId, ativo, depois);
-
-                // 6. Tudo certo: confirma.
-                con.commit();
-                return salva;
-            } catch (SQLException | RuntimeException e) {
-                con.rollback();                           // desfaz os passos 3, 4 e 5
-                throw e;
+            // 1. Condições conferidas no Java (só leitura), para mensagens claras.
+            Ativo ativo = ativoDAO.buscarPorId(con, ativoId);
+            if (ativo == null) {
+                throw new NaoEncontradoException("Ativo " + ativoId + " não encontrado");
             }
+            if (AtivoService.DESCARTADO.equals(ativo.getStatus())) {
+                throw new ConflitoException("Ativo descartado não pode ser movimentado");
+            }
+            if (paraEstoque && ativo.getRackId() == null) {
+                throw new ConflitoException("O ativo já está no estoque");
+            }
+            if (!paraEstoque
+                    && Objects.equals(ativo.getRackId(), pedido.rackDestinoId())
+                    && Objects.equals(ativo.getSlotInicio(), pedido.slotInicioDestino())
+                    && Objects.equals(ativo.getSlotFim(), pedido.slotFimDestino())) {
+                throw new ConflitoException("O ativo já está nessa posição");
+            }
+            // Destino válido? (ignora o próprio ativo: ele pode "deslizar" no mesmo rack)
+            if (!paraEstoque) {
+                rackService.validarPosicao(con, pedido.rackDestinoId(), pedido.slotInicioDestino(),
+                        pedido.slotFimDestino(), ativoId);
+            }
+
+            // 2. A transação: a procedure grava tudo ou nada. Se ela der erro (ex.: 1644 de um
+            //    trigger), o MySQL já fez o ROLLBACK e a SQLException vai para o TratadorDeErros.
+            int movId = dao.movimentar(con, ativoId, pedido.rackDestinoId(), pedido.slotInicioDestino(),
+                    pedido.slotFimDestino(), motivo, usuarioId);
+
+            return dao.buscarPorId(con, movId);
         }
     }
 }

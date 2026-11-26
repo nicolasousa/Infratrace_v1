@@ -51,7 +51,7 @@ Evite abstrações desnecessárias. É um projeto acadêmico de pequeno porte.
 - **Não altere tabelas, colunas ou relacionamentos** sem explicar o motivo e receber aprovação.
   Use sempre os nomes reais do script. Nunca invente nomes de tabelas ou colunas.
 - Convenções: snake_case, prefixo de 3 letras por tabela (`atv_`, `rac_`, `usr_`...), FKs como
-  `fk_<prefixo>_id`, views como `View_<nome>` e triggers como `Trigger_<nome>`. IDs com `AUTO_INCREMENT`; datas e horas em `DATETIME` (mapear para
+  `fk_<prefixo>_id`, views como `View_<nome>`, triggers como `Trigger_<nome>` e procedures como `Procedure_<nome>`. IDs com `AUTO_INCREMENT`; datas e horas em `DATETIME` (mapear para
   `LocalDateTime`).
 - Regras garantidas pelo banco por triggers (`SIGNAL SQLSTATE '45000'`, erro 1644 no JDBC):
   - slots sobrepostos no mesmo rack;
@@ -60,9 +60,10 @@ Evite abstrações desnecessárias. É um projeto acadêmico de pequeno porte.
   - aluguéis com período sobreposto no mesmo rack.
 
   O Service também deve validar essas regras (Etapa 6), para devolver mensagens amigáveis.
-- **Movimentação:** a tabela `movimentacao` não altera o ativo sozinha. Na mesma transação JDBC:
-  `INSERT INTO movimentacao` → `UPDATE ativo SET fk_rac_id, atv_slot_inicio, atv_slot_fim` →
-  `commit()`, ou `rollback()` se qualquer passo falhar.
+- **Movimentação:** a tabela `movimentacao` não altera o ativo sozinha. Na mesma transação
+  (feita no MySQL pela `Procedure_movimentar_ativo`): `INSERT INTO movimentacao` →
+  `UPDATE ativo SET fk_rac_id, atv_slot_inicio, atv_slot_fim` → `COMMIT`, ou `ROLLBACK` se
+  qualquer passo falhar.
 
 ## Credenciais
 
@@ -100,14 +101,25 @@ Código em `backend-java/Infratrace/src/main/java/br/com/infratrace/`:
   `X-Usuario-Id` ou, sem ele, o primeiro ADMIN ativo. O script SQL cria o usuário
   "Administrador" (id 1) com `usr_senha_hash = 'SEM_LOGIN'` (a coluna é NOT NULL).
 - Padrão de transação: os DAOs recebem a `Connection`; o Service abre, faz
-  `setAutoCommit(false)`, `commit()`/`rollback()`. `config/Transacao` centraliza isso;
-  `MovimentacaoService` está escrito por extenso de propósito (exemplo didático).
+  `setAutoCommit(false)`, `commit()`/`rollback()`. `config/Transacao` centraliza isso.
+  Exceção: a movimentação (ver abaixo, Procedures).
 - Auditoria: toda escrita grava `log_auditoria` na mesma transação (JSON com antes/depois).
 - Racks: `RackService.validarPosicao` trava o rack com `SELECT ... FOR UPDATE` e valida
   capacidade e sobreposição antes dos triggers.
 - Views (2026-11-23): `View_ocupacao_rack` (lida por `RackDAO.listarOcupacao`, rota
   `GET /racks/ocupacao`) e `View_garantia_ativo` (lida por `AtivoDAO.listarGarantiaVencendo`,
   rota `GET /alertas/garantias`, que agora devolve o DTO `GarantiaVencendo`).
+- Triggers simplificados em 2026-11-23 (padrão `DECLARE` → `SELECT ... INTO` → `IF ... SIGNAL`,
+  mensagens fixas). Procedures (2026-11-24): `Procedure_ativos_do_rack` (SELECT simples) e
+  `Procedure_movimentar_ativo` (transação no banco com `EXIT HANDLER` → `ROLLBACK; RESIGNAL`).
+  Decisão do grupo (2026-11-24): a transação da movimentação fica **no MySQL**. O
+  `MovimentacaoService` só valida (leitura, para mensagens 404/400/409) e o
+  `MovimentacaoDAO.movimentar` faz `CALL` via `CallableStatement` em autocommit (sem
+  `setAutoCommit(false)`, porque o `START TRANSACTION` da procedure faria commit implícito).
+  A procedure trava ativo e rack (`FOR UPDATE`) e grava os 2 `log_auditoria` com `JSON_OBJECT`
+  (o do ativo só com `id`, `rackId`, `slotInicio`, `slotFim`). Cadastro e descarte de ativo
+  ainda gravam movimentação por `MovimentacaoDAO.inserir` dentro da transação JDBC.
+  Ainda não testado com MySQL/compilação (em 2026-11-24 a máquina usada não tinha JDK/Maven).
 - Spring Boot 4.1.2 só com `spring-boot-starter-web`; Jackson 3 (`tools.jackson.*`).
 - `application.properties` não tem `spring.datasource.*`: a `Conexao` lê `System.getenv`.
 - JDK 21 em `~/.jdks/openjdk-21.0.2`; Maven do IntelliJ em

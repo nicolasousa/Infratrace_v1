@@ -235,11 +235,12 @@ CREATE TABLE movimentacao (
     CONSTRAINT fk_mov_usuario      FOREIGN KEY (fk_usr_id)         REFERENCES usuario (usr_id)
 );
 
--- Observação: a movimentação NÃO altera o ativo sozinha. A aplicação deve,
--- na MESMA transação (setAutoCommit(false) no JDBC):
+-- Observação: a movimentação NÃO altera o ativo sozinha. Na MESMA transação:
 --   1. INSERT INTO movimentacao (...)
 --   2. UPDATE ativo SET fk_rac_id = ?, atv_slot_inicio = ?, atv_slot_fim = ? WHERE atv_id = ?
 --   3. COMMIT  (ou ROLLBACK se qualquer passo falhar)
+-- Essa transação é feita pela Procedure_movimentar_ativo (ver Procedures, mais abaixo),
+-- que é chamada pela API.
 
 -- ---------------------------------------------------------------------
 -- Clientes e aluguéis (RF-06, RF-07)
@@ -522,6 +523,140 @@ SELECT a.atv_id,
   LEFT JOIN sala s    ON s.sal_id = f.fk_sal_id
  WHERE a.atv_garantia IS NOT NULL
    AND a.atv_status <> 'DESCARTADO';
+
+-- =====================================================================
+-- Procedures
+-- Uma procedure é um bloco de comandos SQL guardado no banco com um nome.
+-- Ela recebe parâmetros (IN) e é executada com CALL nome(...).
+-- Diferente da view, ela pode ter várias instruções, variáveis, IF e
+-- controle de transação (START TRANSACTION / COMMIT / ROLLBACK).
+-- =====================================================================
+DELIMITER $$
+
+-- Procedure simples: lista os ativos instalados em um rack, em ordem de slot.
+-- Uso: CALL Procedure_ativos_do_rack(1);
+CREATE PROCEDURE Procedure_ativos_do_rack(IN p_rac_id INT)
+BEGIN
+    SELECT atv_id, atv_nome, atv_status, atv_slot_inicio, atv_slot_fim
+      FROM ativo
+     WHERE fk_rac_id = p_rac_id
+     ORDER BY atv_slot_inicio;
+END$$
+
+-- Movimentação de ativo: TRANSAÇÃO feita pelo MySQL.
+-- É esta procedure que a API chama (MovimentacaoDAO.movimentar, via CALL).
+-- Faz tudo junto: registra a movimentação, muda o ativo de lugar e grava a
+-- auditoria. Ou tudo é gravado (COMMIT), ou nada é (ROLLBACK).
+-- Para mandar o ativo para o estoque, passe NULL no rack e nos slots de destino.
+-- p_mov_id (OUT) devolve o id da movimentação criada.
+-- Uso no Workbench:
+--   CALL Procedure_movimentar_ativo(7, 4, 10, 11, 'Reorganização', 1, @id);
+--   SELECT @id;
+CREATE PROCEDURE Procedure_movimentar_ativo(
+    IN  p_atv_id         INT,
+    IN  p_rac_destino_id INT,
+    IN  p_slot_inicio    INT,
+    IN  p_slot_fim       INT,
+    IN  p_motivo         VARCHAR(512),
+    IN  p_usr_id         INT,
+    OUT p_mov_id         INT
+)
+BEGIN
+    DECLARE v_existe        INT;
+    DECLARE v_status        VARCHAR(32);
+    DECLARE v_rac_origem    INT;
+    DECLARE v_inicio_origem INT;
+    DECLARE v_fim_origem    INT;
+
+    -- Se QUALQUER comando abaixo der erro (trigger, CHECK, FK ou o nosso SIGNAL),
+    -- este bloco é executado: desfaz tudo e repassa o erro para quem chamou.
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    START TRANSACTION;
+
+    -- Condição 1: o ativo precisa existir
+    SELECT COUNT(*) INTO v_existe FROM ativo WHERE atv_id = p_atv_id;
+    IF v_existe = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ativo não encontrado';
+    END IF;
+
+    -- Guarda a posição atual (origem). FOR UPDATE trava a linha do ativo
+    -- até o COMMIT/ROLLBACK, para ninguém movê-lo ao mesmo tempo.
+    SELECT atv_status, fk_rac_id, atv_slot_inicio, atv_slot_fim
+      INTO v_status, v_rac_origem, v_inicio_origem, v_fim_origem
+      FROM ativo
+     WHERE atv_id = p_atv_id
+       FOR UPDATE;
+
+    -- Condição 2: ativo descartado não pode ser movimentado
+    IF v_status = 'DESCARTADO' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ativo descartado não pode ser movimentado';
+    END IF;
+
+    -- Condição 3: o rack de destino precisa existir. FOR UPDATE trava o rack:
+    -- se duas pessoas tentarem ocupar o mesmo slot ao mesmo tempo, a segunda
+    -- espera a primeira terminar e o trigger já enxerga o slot ocupado.
+    IF p_rac_destino_id IS NOT NULL THEN
+        SELECT COUNT(*) INTO v_existe
+          FROM rack
+         WHERE rac_id = p_rac_destino_id
+           FOR UPDATE;
+        IF v_existe = 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Rack de destino não encontrado';
+        END IF;
+    END IF;
+
+    -- Passo 1: registra a movimentação (passa pelo Trigger_movimentacao_capacidade_ins)
+    INSERT INTO movimentacao (mov_motivo,
+                              mov_slot_inicio_origem, mov_slot_fim_origem,
+                              mov_slot_inicio_destino, mov_slot_fim_destino,
+                              fk_rac_origem_id, fk_rac_destino_id, fk_atv_id, fk_usr_id)
+    VALUES (p_motivo,
+            v_inicio_origem, v_fim_origem,
+            p_slot_inicio, p_slot_fim,
+            v_rac_origem, p_rac_destino_id, p_atv_id, p_usr_id);
+
+    -- LAST_INSERT_ID() = id gerado pelo AUTO_INCREMENT no INSERT acima
+    SET p_mov_id = LAST_INSERT_ID();
+
+    -- Passo 2: muda o ativo de lugar (passa pelo Trigger_ativo_valida_slots_upd)
+    UPDATE ativo
+       SET fk_rac_id       = p_rac_destino_id,
+           atv_slot_inicio = p_slot_inicio,
+           atv_slot_fim    = p_slot_fim
+     WHERE atv_id = p_atv_id;
+
+    -- Passo 3: auditoria, na mesma transação (JSON_OBJECT monta o JSON com os valores)
+    INSERT INTO log_auditoria (log_acao, log_entidade, log_entidade_id,
+                               log_valor_anterior, log_valor_novo, fk_usr_id)
+    VALUES ('INSERT', 'movimentacao', p_mov_id,
+            NULL,
+            JSON_OBJECT('id', p_mov_id, 'motivo', p_motivo,
+                        'rackOrigemId', v_rac_origem,
+                        'slotInicioOrigem', v_inicio_origem, 'slotFimOrigem', v_fim_origem,
+                        'rackDestinoId', p_rac_destino_id,
+                        'slotInicioDestino', p_slot_inicio, 'slotFimDestino', p_slot_fim,
+                        'ativoId', p_atv_id, 'usuarioId', p_usr_id),
+            p_usr_id);
+
+    INSERT INTO log_auditoria (log_acao, log_entidade, log_entidade_id,
+                               log_valor_anterior, log_valor_novo, fk_usr_id)
+    VALUES ('UPDATE', 'ativo', p_atv_id,
+            JSON_OBJECT('id', p_atv_id, 'rackId', v_rac_origem,
+                        'slotInicio', v_inicio_origem, 'slotFim', v_fim_origem),
+            JSON_OBJECT('id', p_atv_id, 'rackId', p_rac_destino_id,
+                        'slotInicio', p_slot_inicio, 'slotFim', p_slot_fim),
+            p_usr_id);
+
+    -- Chegou aqui: todas as condições foram verdadeiras
+    COMMIT;
+END$$
+
+DELIMITER ;
 
 -- ---------------------------------------------------------------------
 -- Dados iniciais

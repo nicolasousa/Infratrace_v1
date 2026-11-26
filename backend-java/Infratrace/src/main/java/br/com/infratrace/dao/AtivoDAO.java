@@ -161,19 +161,6 @@ public class AtivoDAO {
         }
     }
 
-    /** Passo 2 da movimentação: grava a nova posição (rack nulo = estoque). */
-    public void atualizarLocalizacao(Connection con, int id, Integer rackId, Integer slotInicio, Integer slotFim)
-            throws SQLException {
-        String sql = "UPDATE ativo SET fk_rac_id = ?, atv_slot_inicio = ?, atv_slot_fim = ? WHERE atv_id = ?";
-        try (PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setObject(1, rackId);
-            ps.setObject(2, slotInicio);
-            ps.setObject(3, slotFim);
-            ps.setInt(4, id);
-            ps.executeUpdate();
-        }
-    }
-
     public void atualizarStatus(Connection con, int id, String status) throws SQLException {
         try (PreparedStatement ps = con.prepareStatement("UPDATE ativo SET atv_status = ? WHERE atv_id = ?")) {
             ps.setString(1, status);
